@@ -158,15 +158,12 @@ class OutlineOTFCompiler(object):
         in a different way if desired.
         """
         width = glyph.width
-        # don't store the width if it is the default width
-        if self.ufo.info.postscriptDefaultWidthX == width:
-            width = None
-        else:
-            # store the width as the difference from the nominal width
-            if self.ufo.info.postscriptNominalWidthX:
-                width = self.ufo.info.postscriptNominalWidthX - width
-            # round
-            width = _roundInt(width)
+        # subtract the nominal width
+        postscriptNominalWidthX = getAttrWithFallback(self.ufo.info, "postscriptNominalWidthX")
+        if postscriptNominalWidthX:
+            width = width - postscriptNominalWidthX
+        # round
+        width = _roundInt(width)
         pen = T2CharStringPen(width, self.allGlyphs)
         glyph.draw(pen)
         charString = pen.getCharString(private, globalSubrs)
@@ -388,11 +385,10 @@ class OutlineOTFCompiler(object):
             # to be a fallback. use space for this.
             minIndex = 0x0020
             maxIndex = 0x0020
-        if maxIndex >= 0xFFFF:
-            # see OS/2 docs
-            # need to find a value lower than 0xFFFF.
-            # shouldn't get to this point though.
-            raise NotImplementedError
+        if maxIndex > 0xFFFF:
+            # the spec says that 0xFFFF should be used
+            # as the max if the max exceeds 0xFFFF
+            maxIndex = 0xFFFF
         os2.fsFirstCharIndex = minIndex
         os2.fsLastCharIndex = maxIndex
         os2.usBreakChar = 32
@@ -554,6 +550,9 @@ class OutlineOTFCompiler(object):
         # populate font matrix
         unitsPerEm = _roundInt(getAttrWithFallback(info, "unitsPerEm"))
         topDict.FontMatrix = [1.0 / unitsPerEm, 0, 0, 1.0 / unitsPerEm, 0, 0]
+        # populate the width values
+        topDict.defaultWidthX = _roundInt(getAttrWithFallback(info, "postscriptDefaultWidthX"))
+        topDict.nominalWidthX = _roundInt(getAttrWithFallback(info, "postscriptNominalWidthX"))
         # populate hint data
         blueFuzz = _roundInt(getAttrWithFallback(info, "postscriptBlueFuzz"))
         blueShift = _roundInt(getAttrWithFallback(info, "postscriptBlueShift"))
