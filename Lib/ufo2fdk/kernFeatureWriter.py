@@ -38,8 +38,8 @@ class KernFeatureWriter(object):
         self.font = font
         self.getGroups()
         self.getPairs()
+        self.applyGroupNameToClassNameMapping()
         self.getFlatGroups()
-        self.getGroupNameToClassNameMapping()
 
     def write(self, headerText=None):
         """
@@ -130,6 +130,41 @@ class KernFeatureWriter(object):
             # store pair
             pairs[side1, side2] = value
 
+    def applyGroupNameToClassNameMapping(self):
+        """
+        Set up a dictionary mapping group names to class names.
+
+        You should not call this method directly.
+        """
+        mapping = {}
+        for groupNames, feaPrefix in ((self.side1Groups.keys(), side1FeaPrefix), (self.side2Groups.keys(), side2FeaPrefix)):
+            for groupName in sorted(groupNames):
+                className = feaPrefix + groupName[groupPrefixLength:]
+                mapping[groupName] = makeLegalClassName(className, mapping.keys())
+        # kerning
+        newPairs = {}
+        for (side1, side2), value in self.pairs.items():
+            if side1.startswith(side1Prefix):
+                side1 = mapping[side1]
+            if side2.startswith(side2Prefix):
+                side2 = mapping[side2]
+            newPairs[side1, side2] = value
+        self.pairs.clear()
+        self.pairs.update(newPairs)
+        # groups
+        newSide1Groups = {}
+        for groupName, contents in self.side1Groups.items():
+            groupName = mapping[groupName]
+            newSide1Groups[groupName] = contents
+        self.side1Groups.clear()
+        self.side1Groups.update(newSide1Groups)
+        newSide2Groups = {}
+        for groupName, contents in self.side2Groups.items():
+            groupName = mapping[groupName]
+            newSide2Groups[groupName] = contents
+        self.side2Groups.clear()
+        self.side2Groups.update(newSide2Groups)
+
     def getFlatGroups(self):
         """
         Set up two dictionaries keyed by glyph names with
@@ -154,18 +189,6 @@ class KernFeatureWriter(object):
                     continue
                 flatSide2Groups[glyphName] = groupName
 
-    def getGroupNameToClassNameMapping(self):
-        """
-        Set up a dictionary mapping group names to class names.
-
-        You should not call this method directly.
-        """
-        mapping = self.groupNameToClassNameMapping = {}
-        for groupNames, feaPrefix in ((self.side1Groups.keys(), side1FeaPrefix), (self.side2Groups.keys(), side2FeaPrefix)):
-            for groupName in groupNames:
-                className = feaPrefix + groupName[groupPrefixLength:]
-                mapping[groupName] = makeLegalClassName(className, mapping.keys())
-
     # ------------
     # Pair Support
     # ------------
@@ -179,13 +202,13 @@ class KernFeatureWriter(object):
 
         You should not call this method directly.
         """
-        if side1.startswith(side1Prefix):
+        if side1.startswith(side1FeaPrefix):
             side1Group = side1
             side1Glyph = None
         else:
             side1Group = self.flatSide1Groups.get(side1)
             side1Glyph = side1
-        if side2.startswith(side2Prefix):
+        if side2.startswith(side2FeaPrefix):
             side2Group = side2
             side2Glyph = None
         else:
@@ -193,13 +216,13 @@ class KernFeatureWriter(object):
             side2Glyph = side2
 
         havePotentialHigherLevelPair = False
-        if side1.startswith(side1Prefix) and side2.startswith(side2Prefix):
+        if side1.startswith(side1FeaPrefix) and side2.startswith(side2FeaPrefix):
             pass
-        elif side1.startswith(side1Prefix):
+        elif side1.startswith(side1FeaPrefix):
             if side2Group is not None:
                 if (side1, side2) in self.pairs:
                     havePotentialHigherLevelPair = True
-        elif side2.startswith(side2Prefix):
+        elif side2.startswith(side2FeaPrefix):
             if side1Group is not None:
                 if (side1, side2) in self.pairs:
                     havePotentialHigherLevelPair = True
@@ -240,11 +263,11 @@ class KernFeatureWriter(object):
         groupGlyphDecomposed = {}
         groupGroup = {}
         for (side1, side2), value in pairs.items():
-            if side1.startswith(side1Prefix) and side2.startswith(side2Prefix):
+            if side1.startswith(side1FeaPrefix) and side2.startswith(side2FeaPrefix):
                 groupGroup[side1, side2] = value
-            elif side1.startswith(side1Prefix):
+            elif side1.startswith(side1FeaPrefix):
                 groupGlyph[side1, side2] = value
-            elif side2.startswith(side2Prefix):
+            elif side2.startswith(side2FeaPrefix):
                 glyphGroup[side1, side2] = value
             else:
                 glyphGlyph[side1, side2] = value
@@ -280,10 +303,8 @@ class KernFeatureWriter(object):
         You should not call this method directly.
         """
         classes = []
-        for groupName in sorted(groups.keys()):
-            group = groups[groupName]
-            className = self.groupNameToClassNameMapping[groupName]
-            l = "%s = [%s];" % (className, " ".join(sorted(group)))
+        for groupName, contents in sorted(groups.items()):
+            l = "%s = [%s];" % (groupName, " ".join(sorted(contents)))
             classes.append(l)
         return classes
 
@@ -297,10 +318,6 @@ class KernFeatureWriter(object):
         for (side1, side2), value in sorted(pairs.items()):
             if not side1 or not side2:
                 continue
-            if side1 in self.side1Groups:
-                side1 = self.groupNameToClassNameMapping[side1]
-            if side2 in self.side2Groups:
-                side2 = self.groupNameToClassNameMapping[side2]
             if isinstance(side1, inlineGroupInstance) or isinstance(side2, inlineGroupInstance):
                 line = "enum pos %s %s %d;"
             else:
