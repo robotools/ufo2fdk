@@ -1,3 +1,5 @@
+# -*- coding: utf8 -*-
+
 try:
     set
 except NameError:
@@ -13,6 +15,13 @@ except NameError:
 
 inlineGroupInstance = (list, tuple, set)
 
+side1Prefix = "public.kern1."
+side2Prefix = "public.kern2."
+side1FeaPrefix = "@kern1."
+side2FeaPrefix = "@kern2."
+groupPrefixLength = len(side1Prefix)
+classPrefixLength = len(side1FeaPrefix)
+
 
 class KernFeatureWriter(object):
 
@@ -20,31 +29,17 @@ class KernFeatureWriter(object):
     This object will create a kerning feature in FDK
     syntax using the kerning in the given font. The
     only external method is :meth:`ufo2fdk.tools.kernFeatureWriter.write`.
-
-    This object does what it can to create the best possible
-    kerning feature, but because it doesn't know anything
-    about how the raw kerning data was created, it has
-    to make some educated guesses about a few things. This
-    happens with regards to finding kerning groups that
-    are not referenced by any kerning pairs. This is only an
-    issue when attempting to decompose certain types of
-    exception pairs. The default implementation of this object
-    finds unreferenced groups in the ``getUnreferencedGroups``.
-    These groups will be studied when attempting to decompose
-    these special exceptions. This is as accurate as it can be,
-    but it is not foolproof. Passing a groupNamePrefix that
-    defines a prefix that all referenced kerning groups will
-    start with. If this is known, it will help remove the
-    ambiguities described above.
     """
 
     def __init__(self, font, groupNamePrefix=""):
+        if groupNamePrefix:
+            from warnings import warn
+            warn("The groupNamePrefix argument is no longer used.", DeprecationWarning)
         self.font = font
-        self.groupNamePrefix = groupNamePrefix
-        self.leftGroups, self.rightGroups = self.getReferencedGroups()
-        self.leftUnreferencedGroups, self.rightUnreferencedGroups = self.getUnreferencedGroups()
-        self.pairs = self.getPairs()
-        self.flatLeftGroups, self.flatRightGroups, self.flatLeftUnreferencedGroups, self.flatRightUnreferencedGroups = self.getFlatGroups()
+        self.getGroups()
+        self.getPairs()
+        self.getFlatGroups()
+        self.getGroupNameToClassNameMapping()
 
     def write(self, headerText=None):
         """
@@ -55,11 +50,8 @@ class KernFeatureWriter(object):
             return ""
         glyphGlyph, glyphGroupDecomposed, groupGlyphDecomposed, glyphGroup, groupGlyph, groupGroup = self.getSeparatedPairs(self.pairs)
         # write the classes
-        groups = dict(self.leftGroups)
-        groups.update(self.rightGroups)
-        for groupName, glyphList in groups.items():
-            if not glyphList:
-                del groups[groupName]
+        groups = dict(self.side1Groups)
+        groups.update(self.side2Groups)
         classes = self.getClassDefinitionsForGroups(groups)
         # write the kerning rules
         rules = []
@@ -97,187 +89,133 @@ class KernFeatureWriter(object):
     # Initial Setup
     # -------------
 
-    def getReferencedGroups(self):
+    def getGroups(self):
         """
-        Get two dictionaries representing groups
-        referenced on the left and right of pairs.
-        You should not call this method directly.
-        """
-        leftReferencedGroups = set()
-        rightReferencedGroups = set()
-        groups = self.font.groups
-        for left, right in self.font.kerning.keys():
-            if left.startswith(self.groupNamePrefix) and left in groups:
-                leftReferencedGroups.add(left)
-            if right.startswith(self.groupNamePrefix) and right in groups:
-                rightReferencedGroups.add(right)
-        leftGroups = {}
-        for groupName in leftReferencedGroups:
-            glyphList = [glyphName for glyphName in groups[groupName] if glyphName in self.font]
-            glyphList = set(glyphList)
-            if not groupName.startswith("@"):
-                groupName = "@" + groupName
-            leftGroups[groupName] = glyphList
-        rightGroups = {}
-        for groupName in rightReferencedGroups:
-            glyphList = [glyphName for glyphName in groups[groupName] if glyphName in self.font]
-            glyphList = set(glyphList)
-            if not groupName.startswith("@"):
-                groupName = "@" + groupName
-            rightGroups[groupName] = glyphList
-        return leftGroups, rightGroups
+        Set up two dictionaries representing first and
+        second side groups.
 
-    def getUnreferencedGroups(self):
-        """
-        Get a dictionary representing kerning groups
-        that are not referenced in any kerning pairs.
         You should not call this method directly.
         """
-        # gather all glyphs that are already referenced
-        leftReferencedGlyphs = []
-        for glyphList in self.leftGroups.values():
-            leftReferencedGlyphs += glyphList
-        leftReferencedGlyphs = set(leftReferencedGlyphs)
-        rightReferencedGlyphs = []
-        for glyphList in self.rightGroups.values():
-            rightReferencedGlyphs += glyphList
-        rightReferencedGlyphs = set(rightReferencedGlyphs)
-        # find unreferenced groups
-        unreferencedLeftGroups = {}
-        unreferencedRightGroups = {}
-        for groupName, glyphList in sorted(self.font.groups.items()):
-            if not groupName.startswith("@") or not groupName.startswith(self.groupNamePrefix):
+        side1Groups = self.side1Groups = {}
+        side2Groups = self.side2Groups = {}
+        for groupName, contents in self.font.groups.items():
+            contents = [glyphName for glyphName in contents if glyphName in self.font]
+            if not contents:
                 continue
-            if groupName in self.leftGroups:
-                continue
-            if groupName in self.rightGroups:
-                continue
-            glyphList = set(glyphList)
-            if not leftReferencedGlyphs & glyphList:
-                unreferencedLeftGroups[groupName] = glyphList
-                leftReferencedGlyphs = leftReferencedGlyphs | glyphList
-            if not rightReferencedGlyphs & glyphList:
-                unreferencedRightGroups[groupName] = glyphList
-                rightReferencedGlyphs = rightReferencedGlyphs | glyphList
-        return unreferencedLeftGroups, unreferencedRightGroups
+            if groupName.startswith(side1Prefix):
+                side1Groups[groupName] = contents
+            elif groupName.startswith(side2Prefix):
+                side2Groups[groupName] = contents
 
     def getPairs(self):
         """
-        Get a dictionary containing all kerning pairs.
+        Set up a dictionary containing all kerning pairs.
         This should filter out pairs containing empty groups
         and groups/glyphs that are not in the font.
+
         You should not call this method directly.
         """
-        pairs = {}
-        for (left, right), value in self.font.kerning.items():
+        pairs = self.pairs = {}
+        for (side1, side2), value in self.font.kerning.items():
             # skip missing glyphs
-            if left not in self.font.groups and left not in self.font:
+            if side1 not in self.side1Groups and side1 not in self.font:
                 continue
-            if right not in self.font.groups and right not in self.font:
+            if side2 not in self.side2Groups and side2 not in self.font:
                 continue
             # skip empty groups
-            if left.startswith(self.groupNamePrefix) and left in self.font.groups and not self.font.groups[left]:
+            if side1.startswith(side1Prefix) and side1 not in self.side1Groups:
                 continue
-            if right.startswith(self.groupNamePrefix) and right in self.font.groups and not self.font.groups[right]:
+            if side2.startswith(side2Prefix) and side2 not in self.side2Groups:
                 continue
             # store pair
-            if left.startswith(self.groupNamePrefix) and left in self.font.groups:
-                if not left.startswith("@"):
-                    left = "@" + left
-            if right.startswith(self.groupNamePrefix) and right in self.font.groups:
-                if not right.startswith("@"):
-                    right = "@" + right
-            pairs[left, right] = value
-        return pairs
+            pairs[side1, side2] = value
 
     def getFlatGroups(self):
         """
-        Get three dictionaries keyed by glyph names with
-        group names as values for left, right and
-        unreferenced groups. You should not call this
-        method directly.
+        Set up two dictionaries keyed by glyph names with
+        group names as values for side 1 and side 2 groups.
+
+        You should not call this method directly.
         """
-        flatLeftGroups = {}
-        flatRightGroups = {}
-        for groupName, glyphList in self.leftGroups.items():
+        flatSide1Groups = self.flatSide1Groups = {}
+        flatSide2Groups = self.flatSide2Groups = {}
+        for groupName, glyphList in self.side1Groups.items():
             for glyphName in glyphList:
                 # user has glyph in more than one group.
                 # this is not allowed.
-                if glyphName in flatLeftGroups:
+                if glyphName in flatSide1Groups:
                     continue
-                flatLeftGroups[glyphName] = groupName
-        for groupName, glyphList in self.rightGroups.items():
+                flatSide1Groups[glyphName] = groupName
+        for groupName, glyphList in self.side2Groups.items():
             for glyphName in glyphList:
                 # user has glyph in more than one group.
                 # this is not allowed.
-                if glyphName in flatRightGroups:
+                if glyphName in flatSide2Groups:
                     continue
-                flatRightGroups[glyphName] = groupName
-        flatLeftUnreferencedGroups = {}
-        for groupName, glyphList in self.leftUnreferencedGroups.items():
-            for glyphName in glyphList:
-                flatLeftUnreferencedGroups[glyphName] = groupName
-        flatRightUnreferencedGroups = {}
-        for groupName, glyphList in self.rightUnreferencedGroups.items():
-            for glyphName in glyphList:
-                flatRightUnreferencedGroups[glyphName] = groupName
-        return flatLeftGroups, flatRightGroups, flatLeftUnreferencedGroups, flatRightUnreferencedGroups
+                flatSide2Groups[glyphName] = groupName
+
+    def getGroupNameToClassNameMapping(self):
+        """
+        Set up a dictionary mapping group names to class names.
+
+        You should not call this method directly.
+        """
+        mapping = self.groupNameToClassNameMapping = {}
+        for groupNames, feaPrefix in ((self.side1Groups.keys(), side1FeaPrefix), (self.side2Groups.keys(), side2FeaPrefix)):
+            for groupName in groupNames:
+                className = feaPrefix + groupName[groupPrefixLength:]
+                mapping[groupName] = makeLegalClassName(className, mapping.keys())
 
     # ------------
     # Pair Support
     # ------------
 
-    def isHigherLevelPairPossible(self, (left, right)):
+    def isHigherLevelPairPossible(self, (side1, side2)):
         """
         Determine if there is a higher level pair possible.
         This doesn't indicate that the pair exists, it simply
-        indicates that something higher than (left, right)
+        indicates that something higher than (side1, side2)
         can exist.
+
         You should not call this method directly.
         """
-        leftInUnreferenced = False
-        rightInUnreferenced = False
-        if left.startswith("@"):
-            leftGroup = left
-            leftGlyph = None
+        if side1.startswith(side1Prefix):
+            side1Group = side1
+            side1Glyph = None
         else:
-            leftGroup = self.flatLeftGroups.get(left)
-            leftGlyph = left
-            if leftGroup is None and left in self.flatLeftUnreferencedGroups:
-                leftInUnreferenced= True
-        if right.startswith("@"):
-            rightGroup = right
-            rightGlyph = None
+            side1Group = self.flatSide1Groups.get(side1)
+            side1Glyph = side1
+        if side2.startswith(side2Prefix):
+            side2Group = side2
+            side2Glyph = None
         else:
-            rightGroup = self.flatRightGroups.get(right)
-            rightGlyph = right
-            if rightGroup is None and right in self.flatRightUnreferencedGroups:
-                rightInUnreferenced = True
+            side2Group = self.flatSide2Groups.get(side2)
+            side2Glyph = side2
 
         havePotentialHigherLevelPair = False
-        if left.startswith("@") and right.startswith("@"):
+        if side1.startswith(side1Prefix) and side2.startswith(side2Prefix):
             pass
-        elif left.startswith("@"):
-            if rightGroup is not None or rightInUnreferenced:
-                if (left, right) in self.pairs:
+        elif side1.startswith(side1Prefix):
+            if side2Group is not None:
+                if (side1, side2) in self.pairs:
                     havePotentialHigherLevelPair = True
-        elif right.startswith("@"):
-            if leftGroup is not None or leftInUnreferenced:
-                if (left, right) in self.pairs:
+        elif side2.startswith(side2Prefix):
+            if side1Group is not None:
+                if (side1, side2) in self.pairs:
                     havePotentialHigherLevelPair = True
         else:
-            if leftGroup is not None and rightGroup is not None:
-                if (leftGlyph, rightGlyph) in self.pairs:
+            if side1Group is not None and side2Group is not None:
+                if (side1Glyph, side2Glyph) in self.pairs:
                     havePotentialHigherLevelPair = True
-                elif (leftGroup, rightGlyph) in self.pairs:
+                elif (side1Group, side2Glyph) in self.pairs:
                     havePotentialHigherLevelPair = True
-                elif (leftGlyph, rightGroup) in self.pairs:
+                elif (side1Glyph, side2Group) in self.pairs:
                     havePotentialHigherLevelPair = True
-            elif leftGroup is not None:
-                if (leftGlyph, rightGlyph) in self.pairs:
+            elif side1Group is not None:
+                if (side1Glyph, side2Glyph) in self.pairs:
                     havePotentialHigherLevelPair = True
-            elif rightGroup is not None:
-                if (leftGlyph, rightGlyph) in self.pairs:
+            elif side2Group is not None:
+                if (side1Glyph, side2Glyph) in self.pairs:
                     havePotentialHigherLevelPair = True
         return havePotentialHigherLevelPair
 
@@ -301,33 +239,33 @@ class KernFeatureWriter(object):
         groupGlyph = {}
         groupGlyphDecomposed = {}
         groupGroup = {}
-        for (left, right), value in pairs.items():
-            if left.startswith("@") and right.startswith("@"):
-                groupGroup[left, right] = value
-            elif left.startswith("@"):
-                groupGlyph[left, right] = value
-            elif right.startswith("@"):
-                glyphGroup[left, right] = value
+        for (side1, side2), value in pairs.items():
+            if side1.startswith(side1Prefix) and side2.startswith(side2Prefix):
+                groupGroup[side1, side2] = value
+            elif side1.startswith(side1Prefix):
+                groupGlyph[side1, side2] = value
+            elif side2.startswith(side2Prefix):
+                glyphGroup[side1, side2] = value
             else:
-                glyphGlyph[left, right] = value
+                glyphGlyph[side1, side2] = value
         ## handle decomposition
         allGlyphGlyph = set(glyphGlyph.keys())
         # glyph to group
-        for (left, right), value in glyphGroup.items():
-            if self.isHigherLevelPairPossible((left, right)):
-                finalRight = tuple([r for r in sorted(self.rightGroups[right]) if (left, r) not in allGlyphGlyph])
+        for (side1, side2), value in glyphGroup.items():
+            if self.isHigherLevelPairPossible((side1, side2)):
+                finalRight = tuple([r for r in sorted(self.side2Groups[side2]) if (side1, r) not in allGlyphGlyph])
                 for r in finalRight:
-                    allGlyphGlyph.add((left, r))
-                glyphGroupDecomposed[left, finalRight] = value
-                del glyphGroup[left, right]
+                    allGlyphGlyph.add((side1, r))
+                glyphGroupDecomposed[side1, finalRight] = value
+                del glyphGroup[side1, side2]
         # group to glyph
-        for (left, right), value in groupGlyph.items():
-            if self.isHigherLevelPairPossible((left, right)):
-                finalLeft = tuple([l for l in sorted(self.leftGroups[left]) if (l, right) not in glyphGlyph and (l, right) not in allGlyphGlyph])
+        for (side1, side2), value in groupGlyph.items():
+            if self.isHigherLevelPairPossible((side1, side2)):
+                finalLeft = tuple([l for l in sorted(self.side1Groups[side1]) if (l, side2) not in glyphGlyph and (l, side2) not in allGlyphGlyph])
                 for l in finalLeft:
-                    allGlyphGlyph.add((l, right))
-                groupGlyphDecomposed[finalLeft, right] = value
-                del groupGlyph[left, right]
+                    allGlyphGlyph.add((l, side2))
+                groupGlyphDecomposed[finalLeft, side2] = value
+                del groupGlyph[side1, side2]
         ## return the result
         return glyphGlyph, glyphGroupDecomposed, groupGlyphDecomposed, glyphGroup, groupGlyph, groupGroup
 
@@ -338,35 +276,114 @@ class KernFeatureWriter(object):
     def getClassDefinitionsForGroups(self, groups):
         """
         Write class definitions to a list of strings.
+
         You should not call this method directly.
         """
         classes = []
         for groupName in sorted(groups.keys()):
             group = groups[groupName]
-            l = "%s = [%s];" % (groupName, " ".join(sorted(group)))
+            className = self.groupNameToClassNameMapping[groupName]
+            l = "%s = [%s];" % (className, " ".join(sorted(group)))
             classes.append(l)
         return classes
 
     def getFeatureRulesForPairs(self, pairs):
         """
         Write pair rules to a list of strings.
+
         You should not call this method directly.
         """
         rules = []
-        for (left, right), value in sorted(pairs.items()):
-            if not left or not right:
+        for (side1, side2), value in sorted(pairs.items()):
+            if not side1 or not side2:
                 continue
-            if isinstance(left, inlineGroupInstance) or isinstance(right, inlineGroupInstance):
+            if side1 in self.side1Groups:
+                side1 = self.groupNameToClassNameMapping[side1]
+            if side2 in self.side2Groups:
+                side2 = self.groupNameToClassNameMapping[side2]
+            if isinstance(side1, inlineGroupInstance) or isinstance(side2, inlineGroupInstance):
                 line = "enum pos %s %s %d;"
             else:
                 line = "pos %s %s %d;"
-            if isinstance(left, inlineGroupInstance):
-                left = "[%s]" % " ".join(sorted(left))
-            if isinstance(right, inlineGroupInstance):
-                right = "[%s]" % " ".join(sorted(right))
-            rules.append(line % (left, right, value))
+            if isinstance(side1, inlineGroupInstance):
+                side1 = "[%s]" % " ".join(sorted(side1))
+            if isinstance(side2, inlineGroupInstance):
+                side2 = "[%s]" % " ".join(sorted(side2))
+            rules.append(line % (side1, side2, value))
         return rules
 
+
+# ------------------
+# Class Name Creator
+# ------------------
+
+_invalidFirstCharacter = set(".0123456789")
+_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._")
+
+def makeLegalClassName(name, existing):
+    """
+    >>> makeLegalClassName("@kern1.foo", [])
+    '@kern1.foo'
+
+    invalid characters
+    ------------------
+    >>> makeLegalClassName(u"@kern1.f•o", [])
+    '@kern1.fo'
+
+    too long
+    --------
+    >>> makeLegalClassName("@kern1.abcdefghijklmnopqrstuvwxyz", [])
+    '@kern1.abcdefghijklmnopqrstuvwx'
+
+    fallback
+    --------
+    >>> makeLegalClassName("@kern1.", [])
+    '@kern1.noTransPossible'
+    >>> makeLegalClassName(u"@kern1.•", [])
+    '@kern1.noTransPossible'
+    """
+    # slice off the prefix
+    prefix = str(name[:classPrefixLength])
+    name = name[classPrefixLength:]
+    # only legal characters
+    name = "".join([c for c in name if c in _validCharacters])
+    name = str(name)
+    # maximum length is 31 - prefix length
+    name = name[:31 - classPrefixLength]
+    # fallback
+    if not name:
+        name = "noTransPossible"
+    # add the prefix
+    name = prefix + name
+    # make sure it is unique
+    _makeUniqueClassName(name, existing)
+    return name
+
+def _makeUniqueClassName(name, existing, counter=0):
+    """
+    >>> _makeUniqueClassName("@kern1.foo", [])
+    '@kern1.foo'
+
+    >>> _makeUniqueClassName("@kern1.foo", ["@kern1.foo"])
+    '@kern1.foo1'
+
+    >>> _makeUniqueClassName("@kern1.foo", ["@kern1.foo", "@kern1.foo1", "@kern1.foo2"])
+    '@kern1.foo3'
+
+    >>> _makeUniqueClassName("@kern1.abcdefghijklmnopqrstuvwx", ["@kern1.abcdefghijklmnopqrstuvwx"])
+    '@kern1.abcdefghijklmnopqrstuvw1'
+    """
+    # Add a number to the name if the counter is higher than zero.
+    newName = name
+    if counter > 0:
+        c = str(counter)
+        assert len(c) < 31 - classPrefixLength
+        newName = newName[:31 - len(c)] + c
+    # If the new name is in the existing group names, recurse.
+    if newName in existing:
+        return _makeUniqueClassName(name, existing, counter + 1)
+    # Otherwise send back the new name.
+    return newName
 
 # ----
 # Test
@@ -383,30 +400,32 @@ def _test():
     >>> kerning = {
     ...     # various pair types
     ...     ("Agrave", "Agrave") : -100,
-    ...     ("@LEFT_A", "Agrave") : -75,
-    ...     ("@LEFT_A", "Aacute") : -74,
-    ...     ("eight", "@RIGHT_B") : -49,
-    ...     ("@LEFT_A", "@RIGHT_A") : -25,
-    ...     ("@LEFT_D", "X") : -25,
-    ...     ("X", "@RIGHT_D") : -25,
+    ...     ("public.kern1.A", "Agrave") : -75,
+    ...     ("public.kern1.A", "Aacute") : -74,
+    ...     ("eight", "public.kern2.B") : -49,
+    ...     ("public.kern1.A", "public.kern2.A") : -25,
+    ...     ("public.kern1.D", "X") : -25,
+    ...     ("X", "public.kern2.D") : -25,
     ...     # empty groups
-    ...     ("@LEFT_C", "@RIGHT_C") : 25,
-    ...     ("C", "@RIGHT_C") : 25,
-    ...     ("@LEFT_C", "C") : 25,
+    ...     ("public.kern1.C", "public.kern2.C") : 25,
+    ...     ("C", "public.kern2.C") : 25,
+    ...     ("public.kern1.C", "C") : 25,
     ...     # nonexistant glyphs
     ...     ("NotInFont", "NotInFont") : 25,
     ...     # nonexistant groups
-    ...     ("@LEFT_NotInFont", "@RIGHT_NotInFont") : 25,
+    ...     ("public.kern1.NotInFont", "public.kern2.NotInFont") : 25,
     ... }
     >>> groups = {
-    ...     "@LEFT_A" : ["A", "Aacute", "Agrave"],
-    ...     "@RIGHT_A" : ["A", "Aacute", "Agrave"],
-    ...     "@LEFT_B" : ["B", "eight"],
-    ...     "@RIGHT_B" : ["B", "eight"],
-    ...     "@LEFT_C" : [],
-    ...     "@RIGHT_C" : [],
-    ...     "@LEFT_D" : ["D"],
-    ...     "@RIGHT_D" : ["D"],
+    ...     "public.kern1.A" : ["A", "Aacute", "Agrave"],
+    ...     "public.kern2.A" : ["A", "Aacute", "Agrave"],
+    ...     "public.kern1.B" : ["B", "eight"],
+    ...     "public.kern2.B" : ["B", "eight"],
+    ...     "public.kern1.C" : [],
+    ...     "public.kern2.C" : [],
+    ...     "public.kern1.D" : ["D"],
+    ...     "public.kern2.D" : ["D"],
+    ...     "public.kern1.E" : ["E"],
+    ...     "public.kern2.E" : ["E"],
     ... }
     >>> font.groups.update(groups)
     >>> font.kerning.update(kerning)
@@ -421,11 +440,14 @@ def _test():
 
 _expectedFeatureText = """
 feature kern {
-    @LEFT_A = [A Aacute Agrave];
-    @LEFT_D = [D];
-    @RIGHT_A = [A Aacute Agrave];
-    @RIGHT_B = [B eight];
-    @RIGHT_D = [D];
+    @kern1.A = [A Aacute Agrave];
+    @kern1.B = [B eight];
+    @kern1.D = [D];
+    @kern1.E = [E];
+    @kern2.A = [A Aacute Agrave];
+    @kern2.B = [B eight];
+    @kern2.D = [D];
+    @kern2.E = [E];
 
     # glyph, glyph
     pos Agrave Agrave -100;
@@ -438,13 +460,13 @@ feature kern {
     enum pos [A Aacute Agrave] Aacute -74;
 
     # glyph, group
-    pos X @RIGHT_D -25;
+    pos X @kern2.D -25;
 
     # group, glyph
-    pos @LEFT_D X -25;
+    pos @kern1.D X -25;
 
     # group, group
-    pos @LEFT_A @RIGHT_A -25;
+    pos @kern1.A @kern2.A -25;
 } kern;
 """
 
