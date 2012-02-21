@@ -1,3 +1,4 @@
+import codecs
 import os
 import shutil
 import re
@@ -5,6 +6,7 @@ from fontInfoData import getAttrWithFallback, intListToNum
 from outlineOTF import OutlineOTFCompiler
 from featureTableWriter import FeatureTableWriter, winStr, macStr
 from kernFeatureWriter import KernFeatureWriter
+
 try:
     sorted
 except NameError:
@@ -179,7 +181,7 @@ class MakeOTFPartsCompiler(object):
                 line = "%s %s" % (finalName, glyphName)
             lines.append(line)
         text = "\n".join(lines) + "\n"
-        f = open(path, "wb")
+        f = codecs.open(path, "wb", encoding="utf8")
         f.write(text)
         f.close()
 
@@ -274,7 +276,7 @@ class MakeOTFPartsCompiler(object):
             features.append(text)
         features = "\n\n".join(features)
         # write the result
-        f = open(path, "wb")
+        f = codecs.open(path, "wb", encoding="utf8")
         f.write(features)
         f.close()
 
