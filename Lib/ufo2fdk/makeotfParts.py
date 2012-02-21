@@ -176,9 +176,9 @@ class MakeOTFPartsCompiler(object):
                 code = hex(code)[2:].upper()
                 if len(code) < 4:
                     code = code.zfill(4)
-                line = "%s %s uni%s" % (finalName, glyphName, code)
+                line = "%s %s uni%s" % (finalName, designName, code)
             else:
-                line = "%s %s" % (finalName, glyphName)
+                line = "%s %s" % (finalName, designName)
             lines.append(line)
         text = "\n".join(lines) + "\n"
         f = codecs.open(path, "wb", encoding="utf8")
