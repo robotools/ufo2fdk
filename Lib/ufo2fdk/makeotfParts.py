@@ -33,7 +33,7 @@ class MakeOTFPartsCompiler(object):
     :class:`ufo2fdk.tools.outlineOTF.OutlineOTFCompiler`.
     """
 
-    def __init__(self, font, path, glyphOrder=None, outlineCompilerClass=OutlineOTFCompiler):
+    def __init__(self, font, path, glyphOrder=None, glyphDesignNameToFinalNameMap=None, outlineCompilerClass=OutlineOTFCompiler):
         self.font = font
         self.path = path
         self.outlineCompilerClass = outlineCompilerClass
@@ -41,6 +41,8 @@ class MakeOTFPartsCompiler(object):
         if glyphOrder is None:
             glyphOrder = sorted(font.keys())
         self.glyphOrder = glyphOrder
+        # set up the production names
+        self.glyphDesignNameToFinalNameMap = self.makeGlyphDesignNameToFinalNameMap(glyphDesignNameToFinalNameMap)
         # make the paths for all files
         self.paths = dict(
             outlineSource=os.path.join(path, "font.otf"),
@@ -49,6 +51,31 @@ class MakeOTFPartsCompiler(object):
             fontInfo=os.path.join(path, "fontinfo"),
             features=os.path.join(path, "features")
         )
+
+    def makeGlyphDesignNameToFinalNameMap(self, providedMap):
+        """
+        Make a map of {glyphName : makeotfLegalGlyphName}
+        for all gyphs in the glyph order..
+        """
+        finalMap = {}
+        if providedMap is not None:
+            finalMap.update(providedMap)
+        # gather glyphs that need a final name
+        needFinalName = [glyphName for glyphName in self.glyphOrder if glyphName not in finalMap]
+        # store names that don't need to be changed
+        for glyphName in needFinalName:
+            if isLegalGlyphName(glyphName):
+                finalMap[glyphName] = glyphName
+        # make names for the rest
+        for glyphName in needFinalName:
+            if glyphName in finalMap:
+                continue
+            uniValue = None
+            if glyphName in self.font:
+                uniValue = self.font[glyphName].unicode
+            finalMap[glyphName] = normalizeGlyphName(glyphName, uniValue, finalMap.values())
+        # done
+        return finalMap
 
     def compile(self):
         """
@@ -140,15 +167,16 @@ class MakeOTFPartsCompiler(object):
         in a different way if desired.
         """
         lines = []
-        for glyphName in self.glyphOrder:
-            if glyphName in self.font and self.font[glyphName].unicode is not None:
-                code = self.font[glyphName].unicode
+        for designName in self.glyphOrder:
+            finalName = self.glyphDesignNameToFinalNameMap[designName]
+            if designName in self.font and self.font[designName].unicode is not None:
+                code = self.font[designName].unicode
                 code = hex(code)[2:].upper()
                 if len(code) < 4:
                     code = code.zfill(4)
-                line = "%s %s uni%s" % (glyphName, glyphName, code)
+                line = "%s %s uni%s" % (finalName, glyphName, code)
             else:
-                line = "%s %s" % (glyphName, glyphName)
+                line = "%s %s" % (finalName, glyphName)
             lines.append(line)
         text = "\n".join(lines) + "\n"
         f = open(path, "wb")
@@ -454,6 +482,119 @@ class MakeOTFPartsCompiler(object):
         writer.addLineWithKeyValue("Vendor", '"%s"' % getAttrWithFallback(self.font.info, "openTypeOS2VendorID"))
         return writer.write()
 
+
+# -----------
+# Glyph Names
+# -----------
+
+import unicodedata
+
+_digits = set("0123456789")
+_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.")
+
+def isLegalGlyphName(glyphName):
+    """
+    >>> isLegalGlyphName("a")
+    True
+    >>> isLegalGlyphName(".foo")
+    False
+    >>> isLegalGlyphName(".notdef")
+    True
+    >>> isLegalGlyphName("foo.bar")
+    True
+    >>> isLegalGlyphName("1foo")
+    False
+    >>> isLegalGlyphName("foo1")
+    True
+    >>> isLegalGlyphName("f*o")
+    False
+    >>> isLegalGlyphName("abcdefghijklmnopqrstuvwxyz01234")
+    True
+    >>> isLegalGlyphName("abcdefghijklmnopqrstuvwxyz012345")
+    False
+    """
+    # must not start with a digit or period
+    if glyphName[0] in _digits:
+        return False
+    if glyphName[0] == "." and glyphName != ".notdef":
+        return False
+    # up to 31 characters in length
+    if len(glyphName) > 31:
+        return False
+    # must be entirely comprised of characters from A-Z a-z 0-9 . _
+    for character in glyphName:
+        if character not in _validCharacters:
+            return False
+    # passed
+    return True
+
+def normalizeGlyphName(glyphName, uniValue, existing):
+    """
+    >>> normalizeGlyphName("a-b-c", None, [])
+    'abc'
+    >>> normalizeGlyphName("a-b-c", None, ["abc"])
+    'abc.1'
+    >>> normalizeGlyphName("!", int("0021", 16), [])
+    'uni0021'
+    >>> normalizeGlyphName("!", int("0021", 16), ['uni0021'])
+    'uni0021.1'
+    >>> normalizeGlyphName("abcdefghijklmnopqrstuvwxyz012345", None, [])
+    'glyph1'
+    >>> normalizeGlyphName("a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r-s-t-u-v-w-x-y-z-0-1-2-3-4-5", None, [])
+    'glyph1'
+    """
+    # convert to unicode
+    glyphName = unicode(glyphName)
+    # remove illegal characters
+    glyphName = unicodedata.normalize("NFKD", glyphName)
+    glyphName = glyphName.encode("ascii", "ignore")
+    glyphName = "".join([c for c in glyphName if c in _validCharacters])
+    # no new name
+    if not glyphName:
+        # quickly try to apply the adobe standard
+        if uniValue:
+            if uniValue > 0x0000 and uniValue < 0xFFFF:
+                prefix = "uni"
+            else:
+                prefix = "u"
+            glyphName = prefix + hex(uniValue)[2:].zfill(4).upper()
+    # hit test
+    if glyphName in existing:
+        glyphName = _makeUniqueGlyphName(glyphName, existing)
+    # test for validity
+    if not isLegalGlyphName(glyphName):
+        glyphName = None
+    # fallback
+    if not glyphName:
+        glyphName = _makeUniqueFallbackGlyphName(existing)
+    return glyphName
+
+def _makeUniqueGlyphName(glyphName, existing, number=1):
+    """
+    _makeUniqueGlyphName("abc", ["abc"])
+    'abc.1'
+    """
+    newName = "%s.%d" % (glyphName, number)
+    if newName in existing:
+        return _makeUniqueGlyphName(glyphName, existing, number+1)
+    return newName
+
+def _makeUniqueFallbackGlyphName(existing, number=1):
+    """
+    >>> _makeUniqueFallbackGlyphName([])
+    'glyph1'
+    >>> _makeUniqueFallbackGlyphName(["glyph1"])
+    'glyph2'
+    """
+    assert number < 100000 # arbitrary, but come on. 100,000 illegal glyph names?
+    name = "glyph%d" % number
+    if name in existing:
+        return _makeUniqueFallbackGlyphName(existing, number+1)
+    return name
+
+# --------
+# Features
+# --------
 
 includeRE = re.compile(
     "include"
