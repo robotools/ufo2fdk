@@ -167,14 +167,10 @@ _postscriptFontNameExceptions = set(" [](){}<>/%")
 _postscriptFontNameAllowed = set([unichr(i) for i in xrange(33, 137)])
 
 def normalizeNameForPostscript(name):
-    normalized = []
-    for c in name:
-        if c in _postscriptFontNameExceptions:
-            continue
-        if c not in _postscriptFontNameAllowed:
-            c = unicodedata.normalize("NFKD", c).encode("ascii", "ignore")
-        normalized.append(c)
-    return "".join(normalized)
+    name = unicode(name)
+    normalized = unicodedata.normalize("NFKD", name).encode("ascii", "ignore")
+    normalized = "".join([c for c in normalized if c in _postscriptFontNameAllowed])
+    return normalized
 
 def postscriptFontNameFallback(info):
     """
@@ -189,7 +185,8 @@ def postscriptFullNameFallback(info):
     """
     Fallback to *openTypeNamePreferredFamilyName openTypeNamePreferredSubfamilyName*.
     """
-    return u"%s %s" % (getAttrWithFallback(info, "openTypeNamePreferredFamilyName"), getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName"))
+    name = u"%s %s" % (getAttrWithFallback(info, "openTypeNamePreferredFamilyName"), getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName"))
+    return normalizeNameForPostscript(name)
 
 def postscriptSlantAngleFallback(info):
     """
