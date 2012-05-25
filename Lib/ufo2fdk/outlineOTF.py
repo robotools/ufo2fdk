@@ -563,10 +563,10 @@ class OutlineOTFCompiler(object):
         # populate the width values
         defaultWidthX = _roundInt(getAttrWithFallback(info, "postscriptDefaultWidthX"))
         if defaultWidthX:
-            private.defaultWidthX = defaultWidthX
+            private.rawDict["defaultWidthX"] = defaultWidthX
         nominalWidthX = _roundInt(getAttrWithFallback(info, "postscriptNominalWidthX"))
         if nominalWidthX:
-            private.nominalWidthX = nominalWidthX
+            private.rawDict["nominalWidthX"] = nominalWidthX
         # populate hint data
         blueFuzz = _roundInt(getAttrWithFallback(info, "postscriptBlueFuzz"))
         blueShift = _roundInt(getAttrWithFallback(info, "postscriptBlueShift"))
