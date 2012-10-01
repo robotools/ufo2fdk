@@ -388,6 +388,21 @@ class MakeOTFPartsCompiler(object):
             lines.append(s)
             s = 'nameid %d 1 "%s";' % (id, macStr(value))
             lines.append(s)
+        if self.font.info.openTypeNameRecords is not None:
+            for record in self.font.info.openTypeNameRecords:
+                nameID = record["nameID"]
+                if nameID >= 1 and nameID <= 6:
+                    continue
+                platformID = record["platformID"]
+                encodingID = record["encodingID"]
+                languageID = record["languageID"]
+                string = record["string"]
+                if platformID == 0:
+                    string = macStr(string)
+                else:
+                    string = winStr(string)
+                s = 'nameid %d %d %d %d "%s";' % (nameID, platformID, encodingID, languageID, string)
+                lines.append(s)
         if not lines:
             return ""
         writer = FeatureTableWriter("name")
