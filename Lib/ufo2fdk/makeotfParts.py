@@ -38,6 +38,7 @@ class MakeOTFPartsCompiler(object):
     def __init__(self, font, path, glyphOrder=None, glyphDesignNameToFinalNameMap=None, outlineCompilerClass=OutlineOTFCompiler):
         self.font = font
         self.path = path
+        self.log = []
         self.outlineCompilerClass = outlineCompilerClass
         # store the glyph order
         if glyphOrder is None:
@@ -105,6 +106,7 @@ class MakeOTFPartsCompiler(object):
         """
         c = self.outlineCompilerClass(self.font, path, self.glyphOrder)
         c.compile()
+        self.log += c.log
 
     def setupFile_menuName(self, path):
         """
