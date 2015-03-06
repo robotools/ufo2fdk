@@ -248,7 +248,8 @@ class MakeOTFPartsCompiler(object):
             features.append(text)
         for name, text in sorted(autoTables.items()):
             features.append(text)
-        features = "\n\n".join(features)
+        # strip-out comments from the features so to avoid non-ASCII chars
+        features = "\n\n".join([re.sub(r'#.*$', "", text) for text in features])
         # write the result
         f = open(path, "wb")
         f.write(features)
