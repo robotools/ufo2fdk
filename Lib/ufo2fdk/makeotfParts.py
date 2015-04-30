@@ -2,7 +2,7 @@ import codecs
 import os
 import shutil
 import re
-from fontInfoData import getAttrWithFallback, intListToNum
+from fontInfoData import getAttrWithFallback, intListToNum, normalizeStringForPostscript
 from outlineOTF import OutlineOTFCompiler
 from featureTableWriter import FeatureTableWriter, winStr, macStr
 from kernFeatureWriter import KernFeatureWriter
@@ -35,11 +35,13 @@ class MakeOTFPartsCompiler(object):
     :class:`ufo2fdk.tools.outlineOTF.OutlineOTFCompiler`.
     """
 
-    def __init__(self, font, path, glyphOrder=None, glyphDesignNameToFinalNameMap=None, outlineCompilerClass=OutlineOTFCompiler):
+    def __init__(self, font, path, features=None, glyphOrder=None, glyphDesignNameToFinalNameMap=None, outlineCompilerClass=OutlineOTFCompiler):
         self.font = font
         self.path = path
         self.log = []
         self.outlineCompilerClass = outlineCompilerClass
+        # store the path to an eventual custom feature file
+        self.features = features
         # store the glyph order
         if glyphOrder is None:
             glyphOrder = sorted(font.keys())
@@ -151,11 +153,11 @@ class MakeOTFPartsCompiler(object):
         ## get around this problem. sigh, old app bugs live long lives.
         if winCompatible != familyName or self.font.info.openTypeNameCompatibleFullName is not None:
             # windows
-            l = "l=%s" % winCompatible
+            l = "l=%s" % normalizeStringForPostscript(winCompatible)
             lines.append(l)
             # mac
             macCompatible = getAttrWithFallback(self.font.info,"openTypeNameCompatibleFullName")
-            l = "m=1,%s" % macCompatible
+            l = "m=1,%s" % macStr(macCompatible)
             lines.append(l)
         text = "\n".join(lines) + "\n"
         f = open(path, "wb")
@@ -176,11 +178,11 @@ class MakeOTFPartsCompiler(object):
             if designName in self.font and self.font[designName].unicode is not None:
                 code = self.font[designName].unicode
                 code = "%04X" % code
-                if len(code) < 4:
+                if len(code) <= 4:
                     code = "uni%s" % code
                 else:
                     code = "u%s" % code
-                line = "%s %s uni%s" % (finalName, designName, code)
+                line = "%s %s %s" % (finalName, designName, code)
             else:
                 line = "%s %s" % (finalName, designName)
             lines.append(line)
@@ -253,6 +255,11 @@ class MakeOTFPartsCompiler(object):
             existing = self.font.features.text
             if existing is None:
                 existing = ""
+        elif self.features is not None:
+            existingFeaturePath = os.path.normpath(os.path.join(self.font.path, self.features))
+            with open(existingFeaturePath, "r") as fea:
+                text = fea.read()
+            existing = forceAbsoluteIncludesInFeatures(text, os.path.dirname(existingFeaturePath))
         else:
             existingFeaturePath = os.path.join(self.font.path, "features.fea")
             existing = forceAbsoluteIncludesInFeatures(self.font.features.text, os.path.dirname(self.font.path))
@@ -668,29 +675,29 @@ def forceAbsoluteIncludesInFeatures(text, directory):
     True
     """
     for match in reversed(list(includeRE.finditer(text))):
-        start, includePath, close = match.groups()
-        # absolute path
-        if os.path.isabs(includePath):
-            continue
-        # relative path
-        currentDirectory = directory
-        parts = includePath.split(os.sep)
-        for index, part in enumerate(parts):
-            part = part.strip()
-            if not part:
-                continue
-            # .. = up one level
-            if part == "..":
-                currentDirectory = os.path.dirname(currentDirectory)
-            # . = current level
-            elif part == ".":
-                continue
-            else:
-                break
-        subPath = os.sep.join(parts[index:])
-        srcPath = os.path.join(currentDirectory, subPath)
-        includeText = start + srcPath + close
-        text = text[:match.start()] + includeText + text[match.end():]
+       start, includePath, close = match.groups()
+       # absolute path
+       if os.path.isabs(includePath):
+           continue
+       # relative path
+       currentDirectory = directory
+       parts = includePath.split(os.sep)
+       for index, part in enumerate(parts):
+           part = part.strip()
+           if not part:
+               continue
+           # .. = up one level
+           if part == "..":
+               currentDirectory = os.path.dirname(currentDirectory)
+           # . = current level
+           elif part == ".":
+               continue
+           else:
+               break
+       subPath = os.sep.join(parts[index:])
+       srcPath = os.path.join(currentDirectory, subPath)
+       includeText = start + srcPath + close
+       text = text[:match.start()] + includeText + text[match.end():]
     return text
 
 def _roundInt(value):
