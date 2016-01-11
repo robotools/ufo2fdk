@@ -42,7 +42,7 @@ def haveFDK():
     if _fdkToolDirectory is None:
         return False
     env = _makeEnviron()
-    for tools in [["makeotf"], ["checkoutlines", "checkOssutlinesUFO"], ["autohint"]]:
+    for tools in [["makeotf"], ["checkoutlines", "checkoutlinesUFO"], ["autohint"]]:
         text = ""
         for tool in tools:
             cmds = "which %s" % tool
