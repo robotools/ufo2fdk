@@ -139,12 +139,16 @@ def openTypeOS2WinAscentFallback(info):
     """
     Fallback to the maximum y value of the font's bounding box.
     If that is not available, fallback to *ascender*.
+    If the maximum y value is negative, fallback to 0 (zero).
     """
     font = info.getParent()
     if font is None:
-        return getAttrWithFallback(info, "ascender")
-    bounds = getFontBounds(font)
-    xMin, yMin, xMax, yMax = bounds
+        yMax = getAttrWithFallback(info, "ascender")
+    else:
+        bounds = getFontBounds(font)
+        xMin, yMin, xMax, yMax = bounds
+    if yMax < 0:
+        return 0
     return yMax
 
 def openTypeOS2WinDescentFallback(info):
