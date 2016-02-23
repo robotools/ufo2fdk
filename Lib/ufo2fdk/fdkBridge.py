@@ -42,12 +42,14 @@ def haveFDK():
     if _fdkToolDirectory is None:
         return False
     env = _makeEnviron()
-    for tool in ["makeotf", "checkoutlines", "autohint"]:
-        cmds = "which %s" % tool
-        popen = subprocess.Popen(cmds, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=env, shell=True)
-        popen.wait()
-        text = popen.stderr.read()
-        text += popen.stdout.read()
+    for tools in [["makeotf"], ["checkoutlines", "checkoutlinesUFO"], ["autohint"]]:
+        text = ""
+        for tool in tools:
+            cmds = "which %s" % tool
+            popen = subprocess.Popen(cmds, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=env, shell=True)
+            popen.wait()
+            text += popen.stderr.read()
+            text += popen.stdout.read()
         if not text:
             return False
     # now test to make sure that makeotf is new enough
