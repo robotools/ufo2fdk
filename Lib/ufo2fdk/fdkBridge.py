@@ -87,7 +87,6 @@ def makeotf(outputPath, outlineSourcePath=None, featuresPath=None, glyphOrderPat
         cmds.extend(["-ff", featuresPath])
     if glyphOrderPath:
         cmds.extend(["-gf", glyphOrderPath])
-        cmds.append("-ga")
     if menuNamePath:
         cmds.extend(["-mf", menuNamePath])
     if fontInfoPath:

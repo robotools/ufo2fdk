@@ -15,7 +15,7 @@ import time
 import unicodedata
 from fontTools.misc.textTools import binary2num
 from fontTools.misc.arrayTools import unionRect
-import ufoLib
+from robofab import ufoLib
 try:
     set
 except NameError:
@@ -33,6 +33,8 @@ def styleMapFamilyNameFallback(info):
     """
     familyName = getAttrWithFallback(info, "openTypeNamePreferredFamilyName")
     styleName = getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName")
+    if familyName is None:
+        familyName = u""
     if styleName is None:
         styleName = u""
     return (familyName + u" " + styleName).strip()

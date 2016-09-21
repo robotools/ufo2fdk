@@ -37,8 +37,8 @@ setup(name="ufo2fdk",
     description="A bridge between UFOs and the AFKDO",
     author="Tal Leming",
     author_email="tal@typesupply.com",
-    url="http://code.typesupply.com",
+    url="https://github.com/typesupply/ufo2fdk",
     license="MIT",
-    packages=["ufo2fdk"],
+    packages=["ufo2fdk", "ufo2fdk.pens"],
     package_dir={"":"Lib"}
 )
