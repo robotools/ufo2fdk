@@ -451,7 +451,7 @@ class OutlineOTFCompiler(object):
         """
         self.otf["hhea"] = hhea = newTable("hhea")
         font = self.ufo
-        hhea.tableVersion = 1.0
+        hhea.tableVersion = 1
         # vertical metrics
         hhea.ascent = _roundInt(getAttrWithFallback(font.info, "openTypeHheaAscender"))
         hhea.descent = _roundInt(getAttrWithFallback(font.info, "openTypeHheaDescender"))
