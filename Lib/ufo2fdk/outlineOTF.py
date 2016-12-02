@@ -185,7 +185,7 @@ class OutlineOTFCompiler(object):
         self.otf["head"] = head = newTable("head")
         font = self.ufo
         head.checkSumAdjustment = 0
-        head.tableVersion = 0x00010000
+        head.tableVersion = 1
         versionMajor = getAttrWithFallback(font.info, "versionMajor")
         versionMinor = getAttrWithFallback(font.info, "versionMinor") * .001
         head.fontRevision = versionMajor + versionMinor
