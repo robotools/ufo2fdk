@@ -1,5 +1,6 @@
 from fontTools.pens.basePen import BasePen
 
+
 def roundInt(v):
     return int(round(v))
 
@@ -35,13 +36,13 @@ class RelativeCoordinatePen(BasePen):
 
     def _moveTo(self, pt):
         self._heldAbsoluteMove = pt
-    
+
     def _releaseHeldMove(self):
         if self._heldAbsoluteMove is not None:
             pt = self._makePointRelative(self._heldAbsoluteMove)
             self._relativeMoveTo(pt)
             self._heldAbsoluteMove = None
-    
+
     def _relativeMoveTo(self, pt):
         raise NotImplementedError
 
