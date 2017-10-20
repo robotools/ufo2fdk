@@ -289,6 +289,7 @@ class OutlineOTFCompiler(object):
             cmap12_3_10.cmap = nonBMP
             # update tables registry
             cmap.tables = [cmap4_0_3, cmap4_3_1, cmap12_0_4, cmap12_3_10]
+        cmap.tables.sort()
 
     def setupTable_OS2(self):
         """
@@ -471,12 +472,7 @@ class OutlineOTFCompiler(object):
             widths.append(glyph.width)
             lefts.append(left)
             rights.append(right)
-            # robofab
-            if hasattr(glyph, "box"):
-                bounds = glyph.box
-            # others
-            else:
-                bounds = glyph.bounds
+            bounds = glyph.bounds
             if bounds is not None:
                 xMin, yMin, xMax, yMax = bounds
             else:
