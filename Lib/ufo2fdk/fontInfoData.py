@@ -148,7 +148,10 @@ def openTypeOS2WinAscentFallback(info):
         yMax = getAttrWithFallback(info, "ascender")
     else:
         bounds = getFontBounds(font)
-        xMin, yMin, xMax, yMax = bounds
+        if bounds is not None:
+            xMin, yMin, xMax, yMax = bounds
+        else:
+            yMax = getAttrWithFallback(info, "ascender")
     if yMax < 0:
         return 0
     return yMax
