@@ -479,12 +479,7 @@ def getFontBounds(font):
     # others
     else:
         for glyph in font:
-            # robofab
-            if hasattr(glyph,"box"):
-                bounds = glyph.box
-            # others
-            else:
-                bounds = glyph.bounds
+            bounds = glyph.bounds
             if rect is None:
                 rect = bounds
                 continue
