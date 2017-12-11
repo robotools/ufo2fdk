@@ -280,6 +280,25 @@ def postscriptBlueScaleFallback(info):
         blueScale = 3/(4*maxZoneHeight)
     return blueScale
 
+
+def woffMajorVersionFallback(info):
+    """
+    Fallback to the *versionMajor*.
+    """
+    return getAttrWithFallback(info, "versionMajor")
+
+def woffMinorVersionFallback(info):
+    """
+    Fallback to the *versionMinor*.
+    """
+    return getAttrWithFallback(info, "versionMinor")
+
+def woffMetadataUniqueIDFallback(info):
+    """
+    Fallback to the *openTypeNameUniqueID*.
+    """
+    return getAttrWithFallback(info, "openTypeNameUniqueID")
+
 # --------------
 # Attribute Maps
 # --------------
@@ -343,6 +362,8 @@ staticFallbackData = dict(
     openTypeVheaCaretSlopeRise=None,
     openTypeVheaCaretSlopeRun=None,
     openTypeVheaCaretOffset=None,
+    openTypeGaspRangeRecords=None,
+    openTypeNameRecords=None,
 
     postscriptUniqueID=None,
     postscriptUnderlineThickness=None,
@@ -359,6 +380,17 @@ staticFallbackData = dict(
     postscriptForceBold=False,
     postscriptDefaultWidthX=200,
     postscriptNominalWidthX=0,
+
+    # woff
+    woffMetadataVendor=None,
+    woffMetadataCopyright=None,
+    woffMetadataCredits=None,
+    woffMetadataDescription=None,
+    woffMetadataExtensions=None,
+    woffMetadataLicense=None,
+    woffMetadataLicensee=None,
+    woffMetadataTrademark=None,
+    woffMetadataUniqueID=None,
 
     # not used in OTF
     postscriptDefaultCharacter=None,
@@ -389,7 +421,9 @@ specialFallbacks = dict(
     postscriptFullName=postscriptFullNameFallback,
     postscriptSlantAngle=postscriptSlantAngleFallback,
     postscriptWeightName=postscriptWeightNameFallback,
-    postscriptBlueScale=postscriptBlueScaleFallback
+    postscriptBlueScale=postscriptBlueScaleFallback,
+    woffMajorVersion=woffMajorVersionFallback,
+    woffMinorVersion=woffMinorVersionFallback,
 )
 
 requiredAttributes = set(ufoLib.fontInfoAttributesVersion2) - (set(staticFallbackData.keys()) | set(specialFallbacks.keys()))
