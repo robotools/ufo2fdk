@@ -185,7 +185,7 @@ class OutlineOTFCompiler(object):
         self.otf["head"] = head = newTable("head")
         font = self.ufo
         head.checkSumAdjustment = 0
-        head.tableVersion = 1.0
+        head.tableVersion = 1
         versionMajor = getAttrWithFallback(font.info, "versionMajor")
         versionMinor = getAttrWithFallback(font.info, "versionMinor") * .001
         head.fontRevision = versionMajor + versionMinor
@@ -451,7 +451,7 @@ class OutlineOTFCompiler(object):
         """
         self.otf["hhea"] = hhea = newTable("hhea")
         font = self.ufo
-        hhea.tableVersion = 1.0
+        hhea.tableVersion = 0x00010000
         # vertical metrics
         hhea.ascent = _roundInt(getAttrWithFallback(font.info, "openTypeHheaAscender"))
         hhea.descent = _roundInt(getAttrWithFallback(font.info, "openTypeHheaDescender"))

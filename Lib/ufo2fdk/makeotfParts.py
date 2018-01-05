@@ -269,7 +269,7 @@ class MakeOTFPartsCompiler(object):
         may override this method to handle the string creation
         in a different way if desired.
         """
-        writer = KernFeatureWriter(self.font)
+        writer = KernFeatureWriter(self.font, groupNamePrefix="@")
         return writer.write()
 
     def writeFeatures_head(self):
