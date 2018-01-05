@@ -1,11 +1,15 @@
+from __future__ import absolute_import
+
 import codecs
 import os
 import shutil
 import re
-from fontInfoData import getAttrWithFallback, intListToNum, normalizeStringForPostscript
-from outlineOTF import OutlineOTFCompiler
-from featureTableWriter import FeatureTableWriter, winStr, macStr
-from kernFeatureWriter import KernFeatureWriter
+from .fontInfoData import getAttrWithFallback, intListToNum, normalizeStringForPostscript
+from .outlineOTF import OutlineOTFCompiler
+from .featureTableWriter import FeatureTableWriter, winStr, macStr
+from .kernFeatureWriter import KernFeatureWriter
+import unicodedata
+
 
 try:
     sorted
@@ -127,38 +131,38 @@ class MakeOTFPartsCompiler(object):
         may override this method to handle the file creation
         in a different way if desired.
         """
-        psName = getAttrWithFallback(self.font.info,"postscriptFontName")
+        psName = getAttrWithFallback(self.font.info, "postscriptFontName")
         lines = [
             "[%s]" % psName
         ]
         # family name
-        familyName = getAttrWithFallback(self.font.info,"openTypeNamePreferredFamilyName")
+        familyName = getAttrWithFallback(self.font.info, "openTypeNamePreferredFamilyName")
         encodedFamilyName = winStr(familyName)
         lines.append("f=%s" % encodedFamilyName)
         if encodedFamilyName != familyName:
             lines.append("f=1,%s" % macStr(familyName))
         # style name
-        styleName = getAttrWithFallback(self.font.info,"openTypeNamePreferredSubfamilyName")
+        styleName = getAttrWithFallback(self.font.info, "openTypeNamePreferredSubfamilyName")
         encodedStyleName = winStr(styleName)
         lines.append("s=%s" % encodedStyleName)
         if encodedStyleName != styleName:
             lines.append("s=1,%s" % macStr(styleName))
         # compatible name
-        winCompatible = getAttrWithFallback(self.font.info,"styleMapFamilyName")
-        ## the second qualification here is in place for Mac Office <= 2004.
-        ## in that app the menu name is pulled from name ID 18. the font
-        ## may have standard naming data that combines to a length longer
-        ## than the app can handle (see Adobe Tech Note #5088). the designer
-        ## may have created a specific openTypeNameCompatibleFullName to
-        ## get around this problem. sigh, old app bugs live long lives.
+        winCompatible = getAttrWithFallback(self.font.info, "styleMapFamilyName")
+        # the second qualification here is in place for Mac Office <= 2004.
+        # in that app the menu name is pulled from name ID 18. the font
+        # may have standard naming data that combines to a length longer
+        # than the app can handle (see Adobe Tech Note #5088). the designer
+        # may have created a specific openTypeNameCompatibleFullName to
+        # get around this problem. sigh, old app bugs live long lives.
         if winCompatible != familyName or self.font.info.openTypeNameCompatibleFullName is not None:
             # windows
-            l = "l=%s" % normalizeStringForPostscript(winCompatible)
-            lines.append(l)
+            line = "l=%s" % normalizeStringForPostscript(winCompatible)
+            lines.append(line)
             # mac
-            macCompatible = getAttrWithFallback(self.font.info,"openTypeNameCompatibleFullName")
-            l = "m=1,%s" % macStr(macCompatible)
-            lines.append(l)
+            macCompatible = getAttrWithFallback(self.font.info, "openTypeNameCompatibleFullName")
+            line = "m=1,%s" % macStr(macCompatible)
+            lines.append(line)
         text = "\n".join(lines) + "\n"
         f = open(path, "wb")
         f.write(text)
@@ -210,7 +214,7 @@ class MakeOTFPartsCompiler(object):
         """
         lines = []
         # style mapping
-        styleMapStyleName = getAttrWithFallback(self.font.info,"styleMapStyleName")
+        styleMapStyleName = getAttrWithFallback(self.font.info, "styleMapStyleName")
         if styleMapStyleName in ("italic", "bold italic"):
             lines.append("IsItalicStyle true")
         else:
@@ -220,7 +224,7 @@ class MakeOTFPartsCompiler(object):
         else:
             lines.append("IsBoldStyle false")
         # fsSelection bits
-        selection = getAttrWithFallback(self.font.info,"openTypeOS2Selection")
+        selection = getAttrWithFallback(self.font.info, "openTypeOS2Selection")
         if 7 in selection:
             lines.append("PreferOS/2TypoMetrics true")
         else:
@@ -389,7 +393,6 @@ class MakeOTFPartsCompiler(object):
             (14 , "openTypeNameLicenseURL"),
             (19 , "openTypeNameSampleText")
         ]
-        multilineNameTableEntries = {}
         lines = []
         for id, attr in idToAttr:
             value = getAttrWithFallback(self.font.info, attr)
@@ -515,10 +518,9 @@ class MakeOTFPartsCompiler(object):
 # Glyph Names
 # -----------
 
-import unicodedata
-
 _digits = set("0123456789")
 _validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.")
+
 
 def isLegalGlyphName(glyphName):
     """
@@ -555,6 +557,7 @@ def isLegalGlyphName(glyphName):
             return False
     # passed
     return True
+
 
 def normalizeGlyphName(glyphName, uniValue, existing):
     """
@@ -597,6 +600,7 @@ def normalizeGlyphName(glyphName, uniValue, existing):
         glyphName = _makeUniqueFallbackGlyphName(existing)
     return glyphName
 
+
 def _makeUniqueGlyphName(glyphName, existing, number=1):
     """
     _makeUniqueGlyphName("abc", ["abc"])
@@ -604,8 +608,9 @@ def _makeUniqueGlyphName(glyphName, existing, number=1):
     """
     newName = "%s.%d" % (glyphName, number)
     if newName in existing:
-        return _makeUniqueGlyphName(glyphName, existing, number+1)
+        return _makeUniqueGlyphName(glyphName, existing, number + 1)
     return newName
+
 
 def _makeUniqueFallbackGlyphName(existing, number=1):
     """
@@ -614,11 +619,12 @@ def _makeUniqueFallbackGlyphName(existing, number=1):
     >>> _makeUniqueFallbackGlyphName(["glyph1"])
     'glyph2'
     """
-    assert number < 100000 # arbitrary, but come on. 100,000 illegal glyph names?
+    assert number < 100000  # arbitrary, but come on. 100,000 illegal glyph names?
     name = "glyph%d" % number
     if name in existing:
-        return _makeUniqueFallbackGlyphName(existing, number+1)
+        return _makeUniqueFallbackGlyphName(existing, number + 1)
     return name
+
 
 # --------
 # Features
@@ -627,8 +633,8 @@ def _makeUniqueFallbackGlyphName(existing, number=1):
 includeRE = re.compile(
     "(include\s*\(\s*)"
     "([^\)]+)"
-    "(\s*\))" # this won't actually capture a trailing space.
-    )
+    "(\s*\))"  # this won't actually capture a trailing space.
+)
 
 forceAbsoluteIncludesInFeaturesTestText = """
 # absolute path
@@ -675,33 +681,35 @@ def forceAbsoluteIncludesInFeatures(text, directory):
     True
     """
     for match in reversed(list(includeRE.finditer(text))):
-       start, includePath, close = match.groups()
-       # absolute path
-       if os.path.isabs(includePath):
-           continue
-       # relative path
-       currentDirectory = directory
-       parts = includePath.split(os.sep)
-       for index, part in enumerate(parts):
-           part = part.strip()
-           if not part:
-               continue
-           # .. = up one level
-           if part == "..":
-               currentDirectory = os.path.dirname(currentDirectory)
-           # . = current level
-           elif part == ".":
-               continue
-           else:
-               break
-       subPath = os.sep.join(parts[index:])
-       srcPath = os.path.join(currentDirectory, subPath)
-       includeText = start + srcPath + close
-       text = text[:match.start()] + includeText + text[match.end():]
+        start, includePath, close = match.groups()
+        # absolute path
+        if os.path.isabs(includePath):
+            continue
+        # relative path
+        currentDirectory = directory
+        parts = includePath.split(os.sep)
+        for index, part in enumerate(parts):
+            part = part.strip()
+            if not part:
+                continue
+            # .. = up one level
+            if part == "..":
+                currentDirectory = os.path.dirname(currentDirectory)
+            # . = current level
+            elif part == ".":
+                continue
+            else:
+                break
+        subPath = os.sep.join(parts[index:])
+        srcPath = os.path.join(currentDirectory, subPath)
+        includeText = start + srcPath + close
+        text = text[:match.start()] + includeText + text[match.end():]
     return text
+
 
 def _roundInt(value):
     return int(round(value))
+
 
 # ----------------------
 # Basic Feature Splitter
@@ -741,6 +749,7 @@ tableNameRE = re.compile(
     "\{"
 )
 
+
 def extractFeaturesAndTables(text, scannedFiles=[]):
     # strip all comments
     decommentedLines = [line.split("#")[0] for line in text.splitlines()]
@@ -761,18 +770,15 @@ def extractFeaturesAndTables(text, scannedFiles=[]):
     # extract all includes
     includes = []
     for match in includeRE.finditer(text):
-       start, includePath, close = match.groups()
-       includes.append(includePath)
+        start, includePath, close = match.groups()
+        includes.append(includePath)
     # slice off the text that comes before
     # the first feature/table definition
-    precedingText = ""
     startMatch = featureTableStartRE.search(text)
     if startMatch is not None:
         start, end = startMatch.span()
-        precedingText = text[:start].strip()
         text = text[start:]
     else:
-        precedingText = text
         text = ""
     # break the features
     broken = _textBreakRecurse(text)
@@ -810,6 +816,7 @@ def extractFeaturesAndTables(text, scannedFiles=[]):
             features.update(f)
             tables.update(t)
     return features, tables
+
 
 def _textBreakRecurse(text):
     matched = []
@@ -870,12 +877,14 @@ extractFeaturesAndTablesTestResult = (
     }
 )
 
+
 def testBreakFeaturesAndTables():
     """
     >>> r = extractFeaturesAndTables(extractFeaturesAndTablesTestText)
     >>> r == extractFeaturesAndTablesTestResult
     True
     """
+
 
 if __name__ == "__main__":
     import doctest

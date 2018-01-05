@@ -1,10 +1,12 @@
+from __future__ import absolute_import
+
 import os
 import shutil
 import tempfile
-import fdkBridge
-from fdkBridge import haveFDK
-from makeotfParts import MakeOTFPartsCompiler
-from outlineOTF import OutlineOTFCompiler
+import ufo2fdk.fdkBridge as fdkBridge
+from .fdkBridge import haveFDK
+from .makeotfParts import MakeOTFPartsCompiler
+from .outlineOTF import OutlineOTFCompiler
 
 
 __all__ = [
@@ -13,17 +15,16 @@ __all__ = [
     "version"
 ]
 
-version = "0.1"
+version = "0.2"
 
-
-#def preflightFont(font):
-#    missingGlyphs = []
-#    if ".notdef" not in font:
-#        missingGlyphs.append(".notdef")
-#    if space not in font and ord(" ") not in font.unicodedata:
-#        missingGlyphs.append("space")
-#    missingInfo, suggestedInfo = preflightInfo(font.info)
-#    # if maxIndex >= 0xFFFF: from outlineOTF
+# def preflightFont(font):
+#     missingGlyphs = []
+#     if ".notdef" not in font:
+#         missingGlyphs.append(".notdef")
+#     if space not in font and ord(" ") not in font.unicodedata:
+#         missingGlyphs.append("space")
+#     missingInfo, suggestedInfo = preflightInfo(font.info)
+#     # if maxIndex >= 0xFFFF: from outlineOTF
 
 
 class OTFCompiler(object):
@@ -92,7 +93,7 @@ class OTFCompiler(object):
                 if progressBar is not None:
                     progressBar.update("Removing overlap...")
                 stderr, stdout = fdkBridge.checkOutlines(partsCompiler.paths["outlineSource"])
-                ## replace the temp names in the report.
+                # replace the temp names in the report.
                 if not self.savePartsNextToUFO:
                     stderr = stderr.replace(partsPath, "")
                     stderr = stderr.replace(partsPath + "/", "")
@@ -104,7 +105,7 @@ class OTFCompiler(object):
                 if progressBar is not None:
                     progressBar.update("Autohinting...")
                 stderr, stdout = fdkBridge.autohint(partsCompiler.paths["outlineSource"])
-                ## replace the temp names in the report.
+                # replace the temp names in the report.
                 if not self.savePartsNextToUFO:
                     stderr = stderr.replace(partsPath, "")
                     stderr = stderr.replace(partsPath + "/", "")
@@ -114,10 +115,10 @@ class OTFCompiler(object):
             # makeotf
             if progressBar is not None:
                 progressBar.update("Compiling...")
-            ## make a temp location for makeotf to compile to.
-            ## it gets confused by the various directories,
-            ## so compile into the parts directory. it will
-            ## be moved later.
+            # make a temp location for makeotf to compile to.
+            # it gets confused by the various directories,
+            # so compile into the parts directory. it will
+            # be moved later.
             tempFontPath = os.path.join(partsPath, "compile.otf")
             stderr, stdout = fdkBridge.makeotf(
                 outputPath=tempFontPath,
@@ -127,8 +128,8 @@ class OTFCompiler(object):
                 menuNamePath=partsCompiler.paths["menuName"],
                 fontInfoPath=partsCompiler.paths["fontInfo"],
                 releaseMode=releaseMode
-                )
-            ## replace the temp names in the report.
+            )
+            # replace the temp names in the report.
             stderr = stderr.replace("compile.otf", os.path.basename(path))
             stdout = stdout.replace("compile.otf", os.path.basename(path))
             stderr = stderr.replace(tempFontPath, path)
@@ -140,7 +141,7 @@ class OTFCompiler(object):
                 stderr = stderr.replace(partsPath + "/", "")
                 stdout = stdout.replace(partsPath, "")
                 stdout = stdout.replace(partsPath + "/", "")
-            ## copy the result from the temp location
+            # copy the result from the temp location
             if os.path.exists(tempFontPath):
                 shutil.copy(tempFontPath, path)
             report["makeotf"] = "\n".join((stdout, stderr))

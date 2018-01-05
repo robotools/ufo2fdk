@@ -4,7 +4,6 @@ It uses subprocess.Popen to create a process that
 executes an FDK program.
 """
 
-
 import sys
 import os
 import re
@@ -64,6 +63,7 @@ def haveFDK():
         return False
     return True
 
+
 def makeotf(outputPath, outlineSourcePath=None, featuresPath=None, glyphOrderPath=None, menuNamePath=None, fontInfoPath=None, releaseMode=False):
     """
     Run makeotf.
@@ -97,6 +97,7 @@ def makeotf(outputPath, outlineSourcePath=None, featuresPath=None, glyphOrderPat
     stderr, stdout = _execute(cmds)
     return stderr, stdout
 
+
 def autohint(fontPath):
     """
     Run autohint.
@@ -110,6 +111,7 @@ def autohint(fontPath):
     cmds = ["autohint", "-nb", "-a", "-r", "-q", fontPath]
     stderr, stdout = _execute(cmds)
     return stderr, stdout
+
 
 def checkOutlines(fontPath, removeOverlap=True, correctContourDirection=True):
     """
@@ -148,10 +150,12 @@ def checkOutlines(fontPath, removeOverlap=True, correctContourDirection=True):
         allStdout.append(stdout)
     return "\n".join(allStderr), "\n".join(allStdout)
 
+
 outlineCheckFirstLineRE = re.compile(
     "Wrote fixed file"
     ".+"
 )
+
 
 def checkOutlinesGlyph(glyph, contours, removeOverlap=True, correctContourDirection=True):
     """
@@ -223,6 +227,7 @@ def checkOutlinesGlyph(glyph, contours, removeOverlap=True, correctContourDirect
     # return the change status
     return madeChange
 
+
 def removeOverlap(glyph, contours):
     from warnings import warn
     warn(DeprecationWarning("Use checkOutlinesGlyph!"))
@@ -238,6 +243,7 @@ if sys.platform == "darwin":
 else:
     _fdkToolDirectory = None
 
+
 def _makeEnviron():
     env = dict(os.environ)
     if _fdkToolDirectory not in env["PATH"].split(":"):
@@ -247,6 +253,7 @@ def _makeEnviron():
         if key in env:
             del env[key]
     return env
+
 
 def _execute(cmds):
     import subprocess
@@ -279,4 +286,3 @@ def _execute(cmds):
     os.remove(stdoutPath)
     # done
     return stderr, stdout
-

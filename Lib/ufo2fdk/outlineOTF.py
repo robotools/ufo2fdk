@@ -1,15 +1,12 @@
-from __future__ import division
-import time
+from __future__ import division, absolute_import
+
 from fontTools.ttLib import TTFont, newTable
 from fontTools.cffLib import TopDictIndex, TopDict, CharStrings, SubrsIndex, GlobalSubrsIndex, PrivateDict, IndexedStrings
 from fontTools.ttLib.tables.O_S_2f_2 import Panose
 from fontTools.ttLib.tables._h_e_a_d import mac_epoch_diff
-from pens.t2CharStringPen import T2CharStringPen
-from fontInfoData import getFontBounds, getAttrWithFallback, dateStringToTimeValue, dateStringForNow, intListToNum, normalizeStringForPostscript
-try:
-    set
-except NameError:
-    from sets import Set as set
+from .pens.t2CharStringPen import T2CharStringPen
+from .fontInfoData import getFontBounds, getAttrWithFallback, dateStringToTimeValue, dateStringForNow, intListToNum, normalizeStringForPostscript
+
 try:
     sorted
 except NameError:
@@ -17,6 +14,7 @@ except NameError:
         l = list(l)
         l.sort()
         return l
+
 
 def _roundInt(v):
     return int(round(v))
@@ -145,7 +143,7 @@ class OutlineOTFCompiler(object):
             if glyphName in [".notdef", "space"]:
                 continue
             orderedGlyphs.append(glyphName)
-        for glyphName in sorted(self.allGlyphs.keys()):
+        for glyphName in sorted(allGlyphs.keys()):
             if glyphName not in orderedGlyphs:
                 orderedGlyphs.append(glyphName)
         return orderedGlyphs
@@ -249,9 +247,9 @@ class OutlineOTFCompiler(object):
         """
         from fontTools.ttLib.tables._c_m_a_p import cmap_format_4
 
-        nonBMP = dict((k,v) for k,v in self.unicodeToGlyphNameMapping.items() if k > 65535)
+        nonBMP = dict((k, v) for k, v in self.unicodeToGlyphNameMapping.items() if k > 65535)
         if nonBMP:
-            mapping = dict((k,v) for k,v in self.unicodeToGlyphNameMapping.items() if k <= 65535)
+            mapping = dict((k, v) for k, v in self.unicodeToGlyphNameMapping.items() if k <= 65535)
         else:
             mapping = dict(self.unicodeToGlyphNameMapping)
         # mac
@@ -354,7 +352,7 @@ class OutlineOTFCompiler(object):
             v = 0
         os2.yStrikeoutPosition = _roundInt(v)
         # family class
-        os2.sFamilyClass = 0 # XXX not sure how to create the appropriate value
+        os2.sFamilyClass = 0  # XXX not sure how to create the appropriate value
         # panose
         data = getAttrWithFallback(font.info, "openTypeOS2Panose")
         panose = Panose()
@@ -478,7 +476,7 @@ class OutlineOTFCompiler(object):
             else:
                 xMin = 0
                 xMax = 0
-            extent = left + (xMax - xMin) # equation from spec for calculating xMaxExtent: Max(lsb + (xMax - xMin))
+            extent = left + (xMax - xMin)  # equation from spec for calculating xMaxExtent: Max(lsb + (xMax - xMin))
             extents.append(extent)
         hhea.advanceWidthMax = _roundInt(max(widths))
         hhea.minLeftSideBearing = _roundInt(min(lefts))
@@ -648,10 +646,9 @@ class OutlineOTFCompiler(object):
         # populate glyphs
         for glyphName in self.glyphOrder:
             glyph = self.allGlyphs[glyphName]
-            unicodes = glyph.unicodes
             charString = self.getCharStringForGlyph(glyph, private, globalSubrs)
             # add to the font
-            exists = charStrings.has_key(glyphName)
+            exists = glyphName in charStrings
             if exists:
                 # XXX a glyph already has this name. should we choke?
                 glyphID = charStrings.charStrings[glyphName]

@@ -4,7 +4,9 @@ from fontTools.pens.basePen import BasePen
 def roundInt(v):
     return int(round(v))
 
-def roundIntPoint((x, y)):
+
+def roundIntPoint(xy):
+    x, y = xy
     return roundInt(x), roundInt(y)
 
 
