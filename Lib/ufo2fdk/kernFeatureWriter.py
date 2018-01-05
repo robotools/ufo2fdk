@@ -193,7 +193,7 @@ class KernFeatureWriter(object):
     # Pair Support
     # ------------
 
-    def isHigherLevelPairPossible(self, (side1, side2)):
+    def isHigherLevelPairPossible(self, pair):
         """
         Determine if there is a higher level pair possible.
         This doesn't indicate that the pair exists, it simply
@@ -202,6 +202,7 @@ class KernFeatureWriter(object):
 
         You should not call this method directly.
         """
+        side1, side2 = pair
         if side1.startswith(side1FeaPrefix):
             side1Group = side1
             side1Glyph = None
@@ -255,7 +256,7 @@ class KernFeatureWriter(object):
 
         You should not call this method directly.
         """
-        ## seperate pairs
+        # seperate pairs
         glyphGlyph = {}
         glyphGroup = {}
         glyphGroupDecomposed = {}
@@ -271,10 +272,10 @@ class KernFeatureWriter(object):
                 glyphGroup[side1, side2] = value
             else:
                 glyphGlyph[side1, side2] = value
-        ## handle decomposition
+        # handle decomposition
         allGlyphGlyph = set(glyphGlyph.keys())
         # glyph to group
-        for (side1, side2), value in glyphGroup.items():
+        for (side1, side2), value in list(glyphGroup.items()):
             if self.isHigherLevelPairPossible((side1, side2)):
                 finalRight = tuple([r for r in sorted(self.side2Groups[side2]) if (side1, r) not in allGlyphGlyph])
                 for r in finalRight:
@@ -282,14 +283,14 @@ class KernFeatureWriter(object):
                 glyphGroupDecomposed[side1, finalRight] = value
                 del glyphGroup[side1, side2]
         # group to glyph
-        for (side1, side2), value in groupGlyph.items():
+        for (side1, side2), value in list(groupGlyph.items()):
             if self.isHigherLevelPairPossible((side1, side2)):
                 finalLeft = tuple([l for l in sorted(self.side1Groups[side1]) if (l, side2) not in glyphGlyph and (l, side2) not in allGlyphGlyph])
                 for l in finalLeft:
                     allGlyphGlyph.add((l, side2))
                 groupGlyphDecomposed[finalLeft, side2] = value
                 del groupGlyph[side1, side2]
-        ## return the result
+        # return the result
         return glyphGlyph, glyphGroupDecomposed, groupGlyphDecomposed, glyphGroup, groupGlyph, groupGroup
 
     # -------------
@@ -304,8 +305,8 @@ class KernFeatureWriter(object):
         """
         classes = []
         for groupName, contents in sorted(groups.items()):
-            l = "%s = [%s];" % (groupName, " ".join(sorted(contents)))
-            classes.append(l)
+            line = "%s = [%s];" % (groupName, " ".join(sorted(contents)))
+            classes.append(line)
         return classes
 
     def getFeatureRulesForPairs(self, pairs):
@@ -336,6 +337,7 @@ class KernFeatureWriter(object):
 
 _invalidFirstCharacter = set(".0123456789")
 _validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._")
+
 
 def makeLegalClassName(name, existing):
     """
@@ -376,6 +378,7 @@ def makeLegalClassName(name, existing):
     _makeUniqueClassName(name, existing)
     return name
 
+
 def _makeUniqueClassName(name, existing, counter=0):
     """
     >>> _makeUniqueClassName("@kern1.foo", [])
@@ -413,7 +416,7 @@ def _test():
     >>> from defcon import Font
     >>> font = Font()
     >>> for glyphName in AGL2UV:
-    ...     font.newGlyph(glyphName)
+    ...     glyph = font.newGlyph(glyphName)
     >>> kerning = {
     ...     # various pair types
     ...     ("Agrave", "Agrave") : -100,
@@ -454,6 +457,7 @@ def _test():
     >>> t1 == t2
     True
     """
+
 
 _expectedFeatureText = """
 feature kern {

@@ -34,9 +34,9 @@ div     divide n-2 token by n-1 token in place in the stack, and pop off n-1 tok
 sc      Start path command. Start new contour. Set CurX,Y to  (0,0)
 cp      Close path. Do a Contour.close(). Set pt index to zero. Note: any drawing command
         for Pt 0 will also start a new path.
-rmt     Relative moveto. Do move to CurX + n-1, CurY + n. 
-hmt     Relative h moveto. Do move to CurX + n. 
-vmt     Relative v moveto. Do move to  CurY + n. 
+rmt     Relative moveto. Do move to CurX + n-1, CurY + n.
+hmt     Relative h moveto. Do move to CurX + n.
+vmt     Relative v moveto. Do move to  CurY + n.
 
 vdt     Relative v line to. Do line-to CurY + n. Set start/end points as a corner pt.
 hdt     Relative h line to. Do line-to CurX + n  Set start/end points as a corner pt.
@@ -148,6 +148,7 @@ def _absolutePoint(pt, last):
     absY += relY
     return absX, absY
 
+
 # tokens that should be ignored during drawing
 ignoredTokens = set([
     "sc", "ed",
@@ -159,6 +160,7 @@ ignoredTokens = set([
     "id"
 ])
 
+
 def intPoint(pt):
     x, y = pt
     if int(x) == x:
@@ -166,6 +168,7 @@ def intPoint(pt):
     if int(y) == y:
         y = int(y)
     return x, y
+
 
 def drawBez(bez, pen):
     """
@@ -193,7 +196,7 @@ def drawBez(bez, pen):
         # flex token. convert to rct.
         if token == "flex":
             token = "rct"
-        # preflx tokens. remove 
+        # preflx tokens. remove
         elif token == "preflx1" or token == "preflx2":
             lastPoint = None
             lastToken = None
@@ -281,4 +284,4 @@ def drawBez(bez, pen):
             pen.curveTo(p1, p2, p3)
             lastToken = "curve"
         else:
-            raise NotImplementedError, line
+            raise NotImplementedError(line)

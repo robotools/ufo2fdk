@@ -64,6 +64,7 @@ def winCharEncode(char):
         return "\\" + v
     return char
 
+
 def macCharEncode(char):
     exceptions = set("\\\"\t\n\r")
     # character codes in the range 128-255 may be specified
@@ -88,11 +89,13 @@ def macCharEncode(char):
         return "\\" + v
     return char
 
+
 def winStr(text):
     """
     Convert string to FDK encoding for Windows.
     """
     return str("".join([winCharEncode(c) for c in unicode(text)]))
+
 
 def macStr(text):
     """

@@ -11,6 +11,7 @@ for synthesizing values for specific attributes. These can be
 used externally as well.
 """
 
+from fontTools.misc.py23 import *
 import time
 import unicodedata
 from fontTools.misc.textTools import binary2num
@@ -20,6 +21,7 @@ try:
     set
 except NameError:
     from sets import Set as set
+
 
 # -----------------
 # Special Fallbacks
@@ -33,9 +35,12 @@ def styleMapFamilyNameFallback(info):
     """
     familyName = getAttrWithFallback(info, "openTypeNamePreferredFamilyName")
     styleName = getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName")
+    if familyName is None:
+        familyName = u""
     if styleName is None:
         styleName = u""
     return (familyName + u" " + styleName).strip()
+
 
 # head
 
@@ -49,11 +54,13 @@ def dateStringForNow():
     second = str(second).zfill(2)
     return "%s/%s/%s %s:%s:%s" % (year, month, day, hour, minute, second)
 
+
 def openTypeHeadCreatedFallback(info):
     """
     Fallback to now.
     """
     return dateStringForNow()
+
 
 # hhea
 
@@ -63,11 +70,13 @@ def openTypeHheaAscenderFallback(info):
     """
     return info.unitsPerEm + info.descender
 
+
 def openTypeHheaDescenderFallback(info):
     """
     Fallback to *descender*.
     """
     return info.descender
+
 
 # name
 
@@ -79,6 +88,7 @@ def openTypeNameVersionFallback(info):
     versionMinor = getAttrWithFallback(info, "versionMinor")
     return "%d.%s" % (versionMajor, str(versionMinor).zfill(3))
 
+
 def openTypeNameUniqueIDFallback(info):
     """
     Fallback to *openTypeNameVersion;openTypeOS2VendorID;styleMapFamilyName styleMapStyleName*.
@@ -89,17 +99,20 @@ def openTypeNameUniqueIDFallback(info):
     styleName = getAttrWithFallback(info, "styleMapStyleName").title()
     return u"%s;%s;%s %s" % (version, vendor, familyName, styleName)
 
+
 def openTypeNamePreferredFamilyNameFallback(info):
     """
     Fallback to *familyName*.
     """
     return info.familyName
 
+
 def openTypeNamePreferredSubfamilyNameFallback(info):
     """
     Fallback to *styleName*.
     """
     return info.styleName
+
 
 def openTypeNameCompatibleFullNameFallback(info):
     """
@@ -113,13 +126,16 @@ def openTypeNameCompatibleFullNameFallback(info):
         familyName += " " + styleMapStyleName.title()
     return familyName
 
+
 def openTypeNameWWSFamilyNameFallback(info):
     # not yet supported
     return None
 
+
 def openTypeNameWWSSubfamilyNameFallback(info):
     # not yet supported
     return None
+
 
 # OS/2
 
@@ -129,11 +145,13 @@ def openTypeOS2TypoAscenderFallback(info):
     """
     return info.unitsPerEm + info.descender
 
+
 def openTypeOS2TypoDescenderFallback(info):
     """
     Fallback to *descender*.
     """
     return info.descender
+
 
 def openTypeOS2WinAscentFallback(info):
     """
@@ -146,10 +164,14 @@ def openTypeOS2WinAscentFallback(info):
         yMax = getAttrWithFallback(info, "ascender")
     else:
         bounds = getFontBounds(font)
-        xMin, yMin, xMax, yMax = bounds
+        if bounds is not None:
+            xMin, yMin, xMax, yMax = bounds
+        else:
+            yMax = getAttrWithFallback(info, "ascender")
     if yMax < 0:
         return 0
     return yMax
+
 
 def openTypeOS2WinDescentFallback(info):
     """
@@ -168,10 +190,12 @@ def openTypeOS2WinDescentFallback(info):
         return 0
     return abs(yMin)
 
+
 # postscript
 
 _postscriptFontNameExceptions = set("[](){}<>/%")
-_postscriptFontNameAllowed = set([unichr(i) for i in xrange(33, 137)])
+_postscriptFontNameAllowed = set([unichr(i) for i in range(33, 137)])
+
 
 def normalizeStringForPostscript(s, allowSpaces=True):
     s = unicode(s)
@@ -186,8 +210,10 @@ def normalizeStringForPostscript(s, allowSpaces=True):
         normalized.append(c)
     return "".join(normalized)
 
+
 def normalizeNameForPostscript(name):
     return normalizeStringForPostscript(name, allowSpaces=False)
+
 
 def postscriptFontNameFallback(info):
     """
@@ -198,6 +224,7 @@ def postscriptFontNameFallback(info):
     name = u"%s-%s" % (getAttrWithFallback(info, "openTypeNamePreferredFamilyName"), getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName"))
     return normalizeNameForPostscript(name)
 
+
 def postscriptFullNameFallback(info):
     """
     Fallback to *openTypeNamePreferredFamilyName openTypeNamePreferredSubfamilyName*.
@@ -205,23 +232,26 @@ def postscriptFullNameFallback(info):
     name = u"%s %s" % (getAttrWithFallback(info, "openTypeNamePreferredFamilyName"), getAttrWithFallback(info, "openTypeNamePreferredSubfamilyName"))
     return normalizeNameForPostscript(name)
 
+
 def postscriptSlantAngleFallback(info):
     """
     Fallback to *italicAngle*.
     """
     return getAttrWithFallback(info, "italicAngle")
 
+
 _postscriptWeightNameOptions = {
-    100 : "Thin",
-    200 : "Extra-light",
-    300 : "Light",
-    400 : "Normal",
-    500 : "Medium",
-    600 : "Semi-bold",
-    700 : "Bold",
-    800 : "Extra-bold",
-    900 : "Black"
+    100: "Thin",
+    200: "Extra-light",
+    300: "Light",
+    400: "Normal",
+    500: "Medium",
+    600: "Semi-bold",
+    700: "Bold",
+    800: "Extra-bold",
+    900: "Black"
 }
+
 
 def postscriptWeightNameFallback(info):
     """
@@ -249,6 +279,7 @@ def postscriptWeightNameFallback(info):
     name = _postscriptWeightNameOptions[value]
     return name
 
+
 def postscriptBlueScaleFallback(info):
     """
     Fallback to a calculated value: 3/(4 * *maxZoneHeight*)
@@ -263,17 +294,39 @@ def postscriptBlueScaleFallback(info):
         assert len(blues) % 2 == 0
         compare = zip(blues[0::2], blues[1::2])
         for x, y in compare:
-            if abs(y-x) > maxZoneHeight:
-                maxZoneHeight = abs(y-x)
+            if abs(y - x) > maxZoneHeight:
+                maxZoneHeight = abs(y - x)
     if len(otherBlues) != 0:
         assert len(otherBlues) % 2 == 0
         compare = zip(otherBlues[0::2], otherBlues[1::2])
         for x, y in compare:
-            if abs(y-x) > maxZoneHeight:
-                maxZoneHeight = abs(y-x)
+            if abs(y - x) > maxZoneHeight:
+                maxZoneHeight = abs(y - x)
     if maxZoneHeight != 0:
-        blueScale = 3/(4*maxZoneHeight)
+        blueScale = 3 / (4 * maxZoneHeight)
     return blueScale
+
+
+def woffMajorVersionFallback(info):
+    """
+    Fallback to the *versionMajor*.
+    """
+    return getAttrWithFallback(info, "versionMajor")
+
+
+def woffMinorVersionFallback(info):
+    """
+    Fallback to the *versionMinor*.
+    """
+    return getAttrWithFallback(info, "versionMinor")
+
+
+def woffMetadataUniqueIDFallback(info):
+    """
+    Fallback to the *openTypeNameUniqueID*.
+    """
+    return getAttrWithFallback(info, "openTypeNameUniqueID")
+
 
 # --------------
 # Attribute Maps
@@ -338,6 +391,8 @@ staticFallbackData = dict(
     openTypeVheaCaretSlopeRise=None,
     openTypeVheaCaretSlopeRun=None,
     openTypeVheaCaretOffset=None,
+    openTypeGaspRangeRecords=None,
+    openTypeNameRecords=None,
 
     postscriptUniqueID=None,
     postscriptUnderlineThickness=None,
@@ -354,6 +409,17 @@ staticFallbackData = dict(
     postscriptForceBold=False,
     postscriptDefaultWidthX=200,
     postscriptNominalWidthX=0,
+
+    # woff
+    woffMetadataVendor=None,
+    woffMetadataCopyright=None,
+    woffMetadataCredits=None,
+    woffMetadataDescription=None,
+    woffMetadataExtensions=None,
+    woffMetadataLicense=None,
+    woffMetadataLicensee=None,
+    woffMetadataTrademark=None,
+    woffMetadataUniqueID=None,
 
     # not used in OTF
     postscriptDefaultCharacter=None,
@@ -384,7 +450,9 @@ specialFallbacks = dict(
     postscriptFullName=postscriptFullNameFallback,
     postscriptSlantAngle=postscriptSlantAngleFallback,
     postscriptWeightName=postscriptWeightNameFallback,
-    postscriptBlueScale=postscriptBlueScaleFallback
+    postscriptBlueScale=postscriptBlueScaleFallback,
+    woffMajorVersion=woffMajorVersionFallback,
+    woffMinorVersion=woffMinorVersionFallback,
 )
 
 requiredAttributes = set(ufoLib.fontInfoAttributesVersion2) - (set(staticFallbackData.keys()) | set(specialFallbacks.keys()))
@@ -421,6 +489,7 @@ recommendedAttributes = set([
     "postscriptStemSnapV"
 ])
 
+
 # ------------
 # Main Methods
 # ------------
@@ -442,6 +511,7 @@ def getAttrWithFallback(info, attr):
             value = staticFallbackData[attr]
     return value
 
+
 def preflightInfo(info):
     """
     Returns a dict containing two items. The value for each
@@ -462,6 +532,7 @@ def preflightInfo(info):
             missingRecommended.add(attr)
     return dict(missingRequired=missingRequired, missingRecommended=missingRecommended)
 
+
 def getFontBounds(font):
     """
     Get a tuple of (xMin, yMin, xMax, yMax) for all
@@ -474,12 +545,7 @@ def getFontBounds(font):
     # others
     else:
         for glyph in font:
-            # robofab
-            if hasattr(glyph,"box"):
-                bounds = glyph.box
-            # others
-            else:
-                bounds = glyph.bounds
+            bounds = glyph.bounds
             if rect is None:
                 rect = bounds
                 continue
@@ -488,6 +554,7 @@ def getFontBounds(font):
     if rect is None:
         rect = (0, 0, 0, 0)
     return rect
+
 
 # -----------------
 # Low Level Support
@@ -498,7 +565,7 @@ def getFontBounds(font):
 def intListToNum(intList, start, length):
     all = []
     bin = ""
-    for i in range(start, start+length):
+    for i in range(start, start + length):
         if i in intList:
             b = "1"
         else:
@@ -513,12 +580,14 @@ def intListToNum(intList, start, length):
     all = " ".join(all)
     return binary2num(all)
 
+
 def dateStringToTimeValue(date):
     try:
         t = time.strptime(date, "%Y/%m/%d %H:%M:%S")
         return long(time.mktime(t))
     except OverflowError:
-        return 0L
+        return long(0)
+
 
 # ----
 # Test
@@ -550,7 +619,7 @@ def _test():
     'Style Name'
 
     >>> getAttrWithFallback(info, "styleMapFamilyName")
-    u'Family Name Style Name'
+    'Family Name Style Name'
     >>> info.styleMapFamilyName = "Style Map Family Name"
     >>> getAttrWithFallback(info, "styleMapFamilyName")
     'Style Map Family Name'
@@ -575,7 +644,7 @@ def _test():
     '1.001'
 
     >>> getAttrWithFallback(info, "openTypeNameUniqueID")
-    u'1.001;NONE;Style Map Family Name Regular'
+    '1.001;NONE;Style Map Family Name Regular'
 
     >>> getAttrWithFallback(info, "openTypeOS2TypoAscender")
     750
@@ -591,6 +660,7 @@ def _test():
     >>> getAttrWithFallback(info, "postscriptWeightName")
     'Normal'
     """
+
 
 if __name__ == "__main__":
     import doctest
