@@ -12,6 +12,8 @@ used externally as well.
 """
 
 from fontTools.misc.py23 import *
+from fontTools.misc.py23 import PY2, PY3
+
 import time
 import unicodedata
 from fontTools.misc.textTools import binary2num
@@ -21,6 +23,18 @@ try:
     set
 except NameError:
     from sets import Set as set
+
+try:
+    long
+except NameError:
+    long = int
+
+
+def _ignoreASCII(s):
+    if PY2:
+        return str(s.decode("ascii", "ignore"))
+    if PY3:
+        return s.encode("ascii", "ignore").decode()
 
 
 # -----------------
@@ -206,7 +220,7 @@ def normalizeStringForPostscript(s, allowSpaces=True):
         if c in _postscriptFontNameExceptions:
             continue
         if c not in _postscriptFontNameAllowed:
-            c = unicodedata.normalize("NFKD", c).encode("ascii", "ignore")
+            c = _ignoreASCII(unicodedata.normalize("NFKD", c))
         normalized.append(c)
     return "".join(normalized)
 

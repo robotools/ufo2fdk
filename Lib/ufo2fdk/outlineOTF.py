@@ -5,7 +5,7 @@ from fontTools.cffLib import TopDictIndex, TopDict, CharStrings, SubrsIndex, Glo
 from fontTools.ttLib.tables.O_S_2f_2 import Panose
 from fontTools.ttLib.tables._h_e_a_d import mac_epoch_diff
 from .pens.t2CharStringPen import T2CharStringPen
-from .fontInfoData import getFontBounds, getAttrWithFallback, dateStringToTimeValue, dateStringForNow, intListToNum, normalizeStringForPostscript
+from .fontInfoData import getFontBounds, getAttrWithFallback, dateStringToTimeValue, dateStringForNow, intListToNum, normalizeStringForPostscript, _ignoreASCII
 
 try:
     sorted
@@ -14,7 +14,6 @@ except NameError:
         l = list(l)
         l.sort()
         return l
-
 
 def _roundInt(v):
     return int(round(v))
@@ -378,7 +377,7 @@ class OutlineOTFCompiler(object):
         os2.ulCodePageRange1 = intListToNum(codepageRanges, 0, 32)
         os2.ulCodePageRange2 = intListToNum(codepageRanges, 32, 32)
         # vendor id
-        os2.achVendID = str(getAttrWithFallback(font.info, "openTypeOS2VendorID").decode("ascii", "ignore"))
+        os2.achVendID = _ignoreASCII(getAttrWithFallback(font.info, "openTypeOS2VendorID"))
         # vertical metrics
         os2.sxHeight = _roundInt(getAttrWithFallback(font.info, "xHeight"))
         os2.sCapHeight = _roundInt(getAttrWithFallback(font.info, "capHeight"))

@@ -1,5 +1,6 @@
 from __future__ import absolute_import
-
+from fontTools.misc.py23 import *
+from fontTools.misc.py23 import PY2, PY3
 import codecs
 import os
 import shutil
@@ -18,6 +19,13 @@ except NameError:
         l = list(l)
         l.sort()
         return l
+
+if PY2:
+    def toBytes(s, encoding=None):
+        return s
+if PY3:
+    def toBytes(s, encoding="utf-8"):
+        return s.encode(encoding)
 
 
 class MakeOTFPartsCompiler(object):
@@ -165,7 +173,7 @@ class MakeOTFPartsCompiler(object):
             lines.append(line)
         text = "\n".join(lines) + "\n"
         f = open(path, "wb")
-        f.write(text)
+        f.write(toBytes(text))
         f.close()
 
     def setupFile_glyphOrder(self, path):
@@ -191,8 +199,11 @@ class MakeOTFPartsCompiler(object):
                 line = "%s %s" % (finalName, designName)
             lines.append(line)
         text = "\n".join(lines) + "\n"
-        f = codecs.open(path, "wb", encoding="utf8")
-        f.write(text)
+        if PY2:
+            f = codecs.open(path, "wb", encoding="utf8")
+        if PY3:
+            f = open(path, "wb")
+        f.write(toBytes(text))
         f.close()
 
     def setupFile_fontInfo(self, path):
@@ -240,7 +251,7 @@ class MakeOTFPartsCompiler(object):
         # write the file
         if lines:
             f = open(path, "wb")
-            f.write("\n".join(lines))
+            f.write(toBytes("\n".join(lines)))
             f.close()
 
     def setupFile_features(self, path):
@@ -291,8 +302,11 @@ class MakeOTFPartsCompiler(object):
             features.append(text)
         features = "\n\n".join(features)
         # write the result
-        f = codecs.open(path, "wb", encoding="utf8")
-        f.write(features)
+        if PY2:
+            f = codecs.open(path, "wb", encoding="utf8")
+        if PY3:
+            f = open(path, "wb")
+        f.write(toBytes(features))
         f.close()
 
     def writeFeatures_kern(self):

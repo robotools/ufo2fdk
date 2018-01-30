@@ -1,3 +1,5 @@
+from fontTools.misc.py23 import *
+
 try:
     set
 except NameError:
