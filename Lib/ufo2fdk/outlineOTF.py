@@ -1,5 +1,7 @@
 from __future__ import division, absolute_import
 
+import math
+
 from fontTools.ttLib import TTFont, newTable
 from fontTools.cffLib import TopDictIndex, TopDict, CharStrings, SubrsIndex, GlobalSubrsIndex, PrivateDict, IndexedStrings
 from fontTools.ttLib.tables.O_S_2f_2 import Panose
@@ -188,16 +190,16 @@ class OutlineOTFCompiler(object):
         head.fontRevision = versionMajor + versionMinor
         head.magicNumber = 0x5F0F3CF5
         # upm
-        head.unitsPerEm = getAttrWithFallback(font.info, "unitsPerEm")
+        head.unitsPerEm = int(round(getAttrWithFallback(font.info, "unitsPerEm")))
         # times
         head.created = dateStringToTimeValue(getAttrWithFallback(font.info, "openTypeHeadCreated")) - mac_epoch_diff
         head.modified = dateStringToTimeValue(dateStringForNow()) - mac_epoch_diff
         # bounding box
         xMin, yMin, xMax, yMax = self.fontBoundingBox
-        head.xMin = xMin
-        head.yMin = yMin
-        head.xMax = xMax
-        head.yMax = yMax
+        head.xMin = int(math.floor(xMin))
+        head.yMin = int(math.floor(yMin))
+        head.xMax = int(math.ceil(xMax))
+        head.yMax = int(math.ceil(yMax))
         # style mapping
         styleMapStyleName = getAttrWithFallback(font.info, "styleMapStyleName")
         macStyle = []
