@@ -18,6 +18,7 @@ import time
 import unicodedata
 from fontTools.misc.textTools import binary2num
 from fontTools.misc.arrayTools import unionRect
+from fontTools.cffLib.width import optimizeWidths
 import ufoLib
 try:
     set
@@ -317,6 +318,34 @@ def postscriptBlueScaleFallback(info):
     return blueScale
 
 
+def _postscriptDefaultAndNominalWidthXFallback(info):
+    font = info.font
+    # calculate for the current default layer
+    if font:
+        return optimizeWidths([glyph.width for glyph in font])
+    return None, None
+
+
+def postscriptDefaultWidthXFallback(info):
+    """
+    Fallback by calcucalting the default width x based on glyph widths.
+    """
+    default, nominal = _postscriptDefaultAndNominalWidthXFallback(info)
+    if default is not None:
+        return default
+    return 200
+
+
+def postscriptNominalWidthXFallback(info):
+    """
+    Fallback by calcucalting the nominal width x based on glyph widths.
+    """
+    default, nominal = _postscriptDefaultAndNominalWidthXFallback(info)
+    if nominal is not None:
+        return nominal
+    return 0
+
+
 def woffMajorVersionFallback(info):
     """
     Fallback to the *versionMajor*.
@@ -417,8 +446,6 @@ staticFallbackData = dict(
     postscriptBlueFuzz=0,
     postscriptBlueShift=7,
     postscriptForceBold=False,
-    postscriptDefaultWidthX=200,
-    postscriptNominalWidthX=0,
 
     # woff
     woffMetadataVendor=None,
@@ -461,6 +488,8 @@ specialFallbacks = dict(
     postscriptSlantAngle=postscriptSlantAngleFallback,
     postscriptWeightName=postscriptWeightNameFallback,
     postscriptBlueScale=postscriptBlueScaleFallback,
+    postscriptDefaultWidthX=postscriptDefaultWidthXFallback,
+    postscriptNominalWidthX=postscriptNominalWidthXFallback,
     woffMajorVersion=woffMajorVersionFallback,
     woffMinorVersion=woffMinorVersionFallback,
 )
