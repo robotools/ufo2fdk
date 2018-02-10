@@ -328,7 +328,7 @@ def _postscriptDefaultAndNominalWidthXFallback(info):
 
 def postscriptDefaultWidthXFallback(info):
     """
-    Fallback by calcucalting the default width x based on glyph widths.
+    Fallback by calculating the default width x based on glyph widths.
     """
     default, nominal = _postscriptDefaultAndNominalWidthXFallback(info)
     if default is not None:
@@ -338,7 +338,7 @@ def postscriptDefaultWidthXFallback(info):
 
 def postscriptNominalWidthXFallback(info):
     """
-    Fallback by calcucalting the nominal width x based on glyph widths.
+    Fallback by calculating the nominal width x based on glyph widths.
     """
     default, nominal = _postscriptDefaultAndNominalWidthXFallback(info)
     if nominal is not None:
