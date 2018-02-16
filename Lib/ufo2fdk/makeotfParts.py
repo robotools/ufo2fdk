@@ -592,7 +592,8 @@ def normalizeGlyphName(glyphName, uniValue, existing):
     glyphName = unicode(glyphName)
     # remove illegal characters
     glyphName = unicodedata.normalize("NFKD", glyphName)
-    glyphName = glyphName.encode("ascii", "ignore")
+    if PY2:
+        glyphName = glyphName.encode("ascii", "ignore")
     glyphName = "".join([c for c in glyphName if c in _validCharacters])
     # no new name
     if not glyphName:
