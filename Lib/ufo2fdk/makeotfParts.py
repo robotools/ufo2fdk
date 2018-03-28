@@ -806,7 +806,7 @@ def extractFeaturesAndTables(text, scannedFiles=[]):
             continue
         # replace the strings
         finalText = text
-        for temp, original in stringReplacements.items():
+        for temp, original in list(stringReplacements.items()):
             if temp in finalText:
                 del stringReplacements[temp]
                 finalText = finalText.replace(temp, original, 1)
