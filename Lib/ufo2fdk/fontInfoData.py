@@ -322,7 +322,7 @@ def _postscriptDefaultAndNominalWidthXFallback(info):
     font = info.font
     # calculate for the current default layer
     if font:
-        return optimizeWidths([glyph.width for glyph in font])
+        return optimizeWidths([int(round(glyph.width)) for glyph in font])
     return None, None
 
 
