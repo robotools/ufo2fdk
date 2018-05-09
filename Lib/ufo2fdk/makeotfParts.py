@@ -425,7 +425,7 @@ class MakeOTFPartsCompiler(object):
                 encodingID = record["encodingID"]
                 languageID = record["languageID"]
                 string = record["string"]
-                if platformID == 0:
+                if platformID == 1:
                     string = macStr(string)
                 else:
                     string = winStr(string)
