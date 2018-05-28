@@ -422,6 +422,8 @@ class MakeOTFPartsCompiler(object):
                 if nameID >= 1 and nameID <= 6:
                     continue
                 platformID = record["platformID"]
+                if platformID not in (1, 3):
+                    continue
                 encodingID = record["encodingID"]
                 languageID = record["languageID"]
                 string = record["string"]
