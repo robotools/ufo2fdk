@@ -83,14 +83,14 @@ def openTypeHheaAscenderFallback(info):
     """
     Fallback to *unitsPerEm + descender*.
     """
-    return info.unitsPerEm + info.descender
+    return int(round(info.unitsPerEm + info.descender))
 
 
 def openTypeHheaDescenderFallback(info):
     """
     Fallback to *descender*.
     """
-    return info.descender
+    return int(round(info.descender))
 
 
 # name
@@ -158,14 +158,14 @@ def openTypeOS2TypoAscenderFallback(info):
     """
     Fallback to *unitsPerEm + descender*.
     """
-    return info.unitsPerEm + info.descender
+    return int(round(info.unitsPerEm + info.descender))
 
 
 def openTypeOS2TypoDescenderFallback(info):
     """
     Fallback to *descender*.
     """
-    return info.descender
+    return int(round(info.descender))
 
 
 def openTypeOS2WinAscentFallback(info):
