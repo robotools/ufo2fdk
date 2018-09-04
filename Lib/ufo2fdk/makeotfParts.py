@@ -272,7 +272,7 @@ class MakeOTFPartsCompiler(object):
                 existing = ""
         elif self.features is not None:
             existingFeaturePath = os.path.normpath(os.path.join(self.font.path, self.features))
-            with open(existingFeaturePath, "r") as fea:
+            with open(existingFeaturePath, "r", encoding="utf-8") as fea:
                 text = fea.read()
             existing = forceAbsoluteIncludesInFeatures(text, os.path.dirname(existingFeaturePath))
         else:
@@ -826,7 +826,7 @@ def extractFeaturesAndTables(text, scannedFiles=[]):
             continue
         scannedFiles.append(path)
         if os.path.exists(path):
-            f = open(path, "r")
+            f = open(path, "r", encoding="utf-8")
             text = f.read()
             f.close()
             f, t = extractFeaturesAndTables(text, scannedFiles)
