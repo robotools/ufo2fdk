@@ -188,13 +188,17 @@ class MakeOTFPartsCompiler(object):
         for designName in self.glyphOrder:
             finalName = self.glyphDesignNameToFinalNameMap[designName]
             if designName in self.font and self.font[designName].unicode is not None:
-                code = self.font[designName].unicode
-                code = "%04X" % code
-                if len(code) <= 4:
-                    code = "uni%s" % code
-                else:
-                    code = "u%s" % code
-                line = "%s %s %s" % (finalName, designName, code)
+                codes = self.font[designName].unicodes
+                unicodes = []
+                for code in codes:
+                    code = "%04X" % code
+                    if len(code) <= 4:
+                        code = "uni%s" % code
+                    else:
+                        code = "u%s" % code
+                    unicodes.append(code)
+                unicodes = ",".join(unicodes)
+                line = "%s %s %s" % (finalName, designName, unicodes)
             else:
                 line = "%s %s" % (finalName, designName)
             lines.append(line)
