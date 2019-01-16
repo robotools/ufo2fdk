@@ -37,7 +37,7 @@ setup(
     description="A bridge between UFOs and the AFKDO",
     author="Tal Leming",
     author_email="tal@typesupply.com",
-    url="http://code.typesupply.com",
+    url="https://github.com/robotools/ufo2fdk",
     license="MIT",
     packages=[
         "ufo2fdk",
