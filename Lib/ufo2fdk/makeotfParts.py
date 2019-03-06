@@ -5,10 +5,10 @@ import codecs
 import os
 import shutil
 import re
-from .fontInfoData import getAttrWithFallback, intListToNum, normalizeStringForPostscript
-from .outlineOTF import OutlineOTFCompiler
-from .featureTableWriter import FeatureTableWriter, winStr, macStr
-from .kernFeatureWriter import KernFeatureWriter
+from ufo2fdk.fontInfoData import getAttrWithFallback, intListToNum, normalizeStringForPostscript
+from ufo2fdk.outlineOTF import OutlineOTFCompiler
+from ufo2fdk.featureTableWriter import FeatureTableWriter, winStr, macStr
+from ufo2fdk.kernFeatureWriter import KernFeatureWriter
 import unicodedata
 
 
@@ -539,7 +539,7 @@ class MakeOTFPartsCompiler(object):
 # -----------
 
 _digits = set("0123456789")
-_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.")
+_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.-+*:~^!")
 
 
 def isLegalGlyphName(glyphName):
@@ -557,6 +557,8 @@ def isLegalGlyphName(glyphName):
     >>> isLegalGlyphName("foo1")
     True
     >>> isLegalGlyphName("f*o")
+    True
+    >>> isLegalGlyphName("f$o")
     False
     >>> isLegalGlyphName("abcdefghijklmnopqrstuvwxyz01234")
     True
@@ -582,17 +584,27 @@ def isLegalGlyphName(glyphName):
 def normalizeGlyphName(glyphName, uniValue, existing):
     """
     >>> normalizeGlyphName("a-b-c", None, [])
+    'a-b-c'
+    >>> normalizeGlyphName("a*b*c", None, [])
+    'a*b*c'
+    >>> normalizeGlyphName("a$b$c", None, [])
     'abc'
-    >>> normalizeGlyphName("a-b-c", None, ["abc"])
-    'abc.1'
+    >>> normalizeGlyphName("a-b-c", None, ["a-b-c"])
+    'a-b-c.1'
     >>> normalizeGlyphName("!", int("0021", 16), [])
-    'uni0021'
-    >>> normalizeGlyphName("!", int("0021", 16), ['uni0021'])
-    'uni0021.1'
+    '!'
+    >>> normalizeGlyphName("!", int("0021", 16), ['!'])
+    '!.1'
+    >>> normalizeGlyphName("?", int("003F", 16), [])
+    'uni003F'
+    >>> normalizeGlyphName("?", int("003F", 16), ['uni003F'])
+    'uni003F.1'
+    >>> normalizeGlyphName("abcdefghijklmnopqrstuvwxyz01234", None, [])
+    'abcdefghijklmnopqrstuvwxyz01234'
     >>> normalizeGlyphName("abcdefghijklmnopqrstuvwxyz012345", None, [])
     'glyph1'
-    >>> normalizeGlyphName("a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r-s-t-u-v-w-x-y-z-0-1-2-3-4-5", None, [])
-    'glyph1'
+    >>> normalizeGlyphName("abcdefghijklmnopqrstuvwxyz0123456", None, ["glyph1"])
+    'glyph2'
     """
     # convert to unicode
     glyphName = unicode(glyphName)
