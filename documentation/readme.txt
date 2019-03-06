@@ -4,4 +4,4 @@ To compile this documentation, use Sphinx. In the shell, move to the documentati
 
 You may already have Sphinx installed. If not, you can get it here:
 
-  http://sphinx.pocoo.org
+  http://www.sphinx-doc.org/en/master/
