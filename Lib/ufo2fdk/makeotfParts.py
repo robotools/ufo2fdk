@@ -539,7 +539,7 @@ class MakeOTFPartsCompiler(object):
 # -----------
 
 _digits = set("0123456789")
-_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.-+*:~^!")
+_validCharacters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.")
 
 
 def isLegalGlyphName(glyphName):
@@ -557,7 +557,7 @@ def isLegalGlyphName(glyphName):
     >>> isLegalGlyphName("foo1")
     True
     >>> isLegalGlyphName("f*o")
-    True
+    False
     >>> isLegalGlyphName("f$o")
     False
     >>> isLegalGlyphName("abcdefghijklmnopqrstuvwxyz01234")
@@ -584,17 +584,17 @@ def isLegalGlyphName(glyphName):
 def normalizeGlyphName(glyphName, uniValue, existing):
     """
     >>> normalizeGlyphName("a-b-c", None, [])
-    'a-b-c'
+    'abc'
     >>> normalizeGlyphName("a*b*c", None, [])
-    'a*b*c'
+    'abc'
     >>> normalizeGlyphName("a$b$c", None, [])
     'abc'
-    >>> normalizeGlyphName("a-b-c", None, ["a-b-c"])
-    'a-b-c.1'
+    >>> normalizeGlyphName("a-b-c", None, ["abc"])
+    'abc.1'
     >>> normalizeGlyphName("!", int("0021", 16), [])
-    '!'
-    >>> normalizeGlyphName("!", int("0021", 16), ['!'])
-    '!.1'
+    'uni0021'
+    >>> normalizeGlyphName("!", int("0021", 16), ['uni0021'])
+    'uni0021.1'
     >>> normalizeGlyphName("?", int("003F", 16), [])
     'uni003F'
     >>> normalizeGlyphName("?", int("003F", 16), ['uni003F'])
