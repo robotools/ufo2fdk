@@ -622,7 +622,7 @@ def intListToNum(intList, start, length):
 
 def dateStringToTimeValue(date):
     try:
-        t = time.strptime(date, "%Y/%m/%d %H:%M:%S")
+        t = calendar.timegm(date, "%Y/%m/%d %H:%M:%S")
         return long(time.mktime(t))
     except OverflowError:
         return long(0)
