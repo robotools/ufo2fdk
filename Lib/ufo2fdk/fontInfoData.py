@@ -14,7 +14,9 @@ used externally as well.
 from fontTools.misc.py23 import *
 from fontTools.misc.py23 import PY2, PY3
 
+import os
 import time
+import calendar
 import unicodedata
 from fontTools.misc.textTools import binary2num
 from fontTools.misc.arrayTools import unionRect
@@ -60,21 +62,19 @@ def styleMapFamilyNameFallback(info):
 # head
 
 def dateStringForNow():
-    year, month, day, hour, minute, second, weekDay, yearDay, isDST = time.localtime()
-    year = str(year)
-    month = str(month).zfill(2)
-    day = str(day).zfill(2)
-    hour = str(hour).zfill(2)
-    minute = str(minute).zfill(2)
-    second = str(second).zfill(2)
-    return "%s/%s/%s %s:%s:%s" % (year, month, day, hour, minute, second)
+    return time.strftime("%Y/%m/%d %H:%M:%S", time.gmtime())
 
 
 def openTypeHeadCreatedFallback(info):
     """
-    Fallback to now.
+    Fallback to the environment variable SOURCE_DATE_EPOCH if set, otherwise
+    now.
     """
-    return dateStringForNow()
+    if "SOURCE_DATE_EPOCH" in os.environ:
+        t = datetime.utcfromtimestamp(int(os.environ["SOURCE_DATE_EPOCH"]))
+        return t.strftime("%Y/%m/%d %H:%M:%S")
+    else:
+        return dateStringForNow()
 
 
 # hhea
@@ -622,9 +622,9 @@ def intListToNum(intList, start, length):
 
 def dateStringToTimeValue(date):
     try:
-        t = calendar.timegm(date, "%Y/%m/%d %H:%M:%S")
-        return long(time.mktime(t))
-    except OverflowError:
+        t = time.strptime(date, "%Y/%m/%d %H:%M:%S")
+        return long(calendar.timegm(t))
+    except ValueError:
         return long(0)
 
 
