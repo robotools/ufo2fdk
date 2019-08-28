@@ -1,10 +1,3 @@
-from fontTools.misc.py23 import *
-
-try:
-    set
-except NameError:
-    from sets import Set as set
-
 
 class FeatureTableWriter(object):
 

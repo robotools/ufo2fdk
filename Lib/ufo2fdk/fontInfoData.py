@@ -10,10 +10,6 @@ There are a set of other functions that are used internally
 for synthesizing values for specific attributes. These can be
 used externally as well.
 """
-
-from fontTools.misc.py23 import *
-from fontTools.misc.py23 import PY2, PY3
-
 import os
 import time
 import calendar
@@ -34,10 +30,7 @@ except NameError:
 
 
 def _ignoreASCII(s):
-    if PY2:
-        return str(s.decode("ascii", "ignore"))
-    if PY3:
-        return s.encode("ascii", "ignore").decode()
+    return s.encode("ascii", "ignore").decode()
 
 
 # -----------------
