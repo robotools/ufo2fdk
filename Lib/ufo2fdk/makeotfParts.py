@@ -546,6 +546,8 @@ def isLegalGlyphName(glyphName):
     False
     """
     # must not start with a digit or period
+    if not glyphName:
+        return False
     if glyphName[0] in _digits:
         return False
     if glyphName[0] == "." and glyphName != ".notdef":
@@ -601,7 +603,7 @@ def normalizeGlyphName(glyphName, uniValue, existing):
                 prefix = "u"
             glyphName = prefix + hex(uniValue)[2:].zfill(4).upper()
     # hit test
-    if glyphName in existing:
+    if glyphName in existing or not glyphName:
         glyphName = _makeUniqueGlyphName(glyphName, existing)
     # test for validity
     if not isLegalGlyphName(glyphName):
