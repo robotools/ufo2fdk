@@ -202,7 +202,7 @@ def openTypeOS2WinDescentFallback(info):
 # postscript
 
 _postscriptFontNameExceptions = set("[](){}<>/%")
-_postscriptFontNameAllowed = set([unichr(i) for i in range(33, 137)])
+_postscriptFontNameAllowed = set([chr(i) for i in range(33, 137)])
 
 
 def normalizeStringForPostscript(s, allowSpaces=True):
