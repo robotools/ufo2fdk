@@ -17,16 +17,7 @@ import unicodedata
 from fontTools.misc.textTools import binary2num
 from fontTools.misc.arrayTools import unionRect
 from fontTools.cffLib.width import optimizeWidths
-import ufoLib
-try:
-    set
-except NameError:
-    from sets import Set as set
-
-try:
-    long
-except NameError:
-    long = int
+from fontTools import ufoLib
 
 
 def _ignoreASCII(s):
@@ -206,7 +197,7 @@ _postscriptFontNameAllowed = set([chr(i) for i in range(33, 137)])
 
 
 def normalizeStringForPostscript(s, allowSpaces=True):
-    s = unicode(s)
+    s = str(s)
     normalized = []
     for c in s:
         if c == " " and not allowSpaces:
@@ -616,9 +607,9 @@ def intListToNum(intList, start, length):
 def dateStringToTimeValue(date):
     try:
         t = time.strptime(date, "%Y/%m/%d %H:%M:%S")
-        return long(calendar.timegm(t))
+        return int(calendar.timegm(t))
     except ValueError:
-        return long(0)
+        return 0
 
 
 # ----

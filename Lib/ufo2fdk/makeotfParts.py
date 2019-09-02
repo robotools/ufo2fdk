@@ -159,7 +159,7 @@ class MakeOTFPartsCompiler(object):
             lines.append(line)
         text = "\n".join(lines) + "\n"
         f = open(path, "wb")
-        f.write(toBytestoBytes(text))
+        f.write(toBytes(text))
         f.close()
 
     def setupFile_glyphOrder(self, path):
@@ -588,8 +588,6 @@ def normalizeGlyphName(glyphName, uniValue, existing):
     >>> normalizeGlyphName("abcdefghijklmnopqrstuvwxyz0123456", None, ["glyph1"])
     'glyph2'
     """
-    # convert to unicode
-    glyphName = unicode(glyphName)
     # remove illegal characters
     glyphName = unicodedata.normalize("NFKD", glyphName)
     glyphName = "".join([c for c in glyphName if c in _validCharacters])
