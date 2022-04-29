@@ -581,7 +581,7 @@ class OutlineOTFCompiler(object):
             copyright = ""
         topDict.Copyright = copyright
         topDict.FullName = getAttrWithFallback(info, "postscriptFullName")
-        topDict.FamilyName = getAttrWithFallback(info, "openTypeNamePreferredFamilyName")
+        topDict.FamilyName = normalizeStringForPostscript(getAttrWithFallback(info, "openTypeNamePreferredFamilyName"))
         topDict.Weight = getAttrWithFallback(info, "postscriptWeightName")
         topDict.FontName = getAttrWithFallback(info, "postscriptFontName")
         # populate various numbers
