@@ -12,6 +12,7 @@ used externally as well.
 """
 import os
 import time
+import datetime
 import calendar
 import unicodedata
 from fontTools.misc.textTools import binary2num
