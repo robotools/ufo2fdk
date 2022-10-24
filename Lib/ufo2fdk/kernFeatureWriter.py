@@ -98,8 +98,14 @@ class KernFeatureWriter(object):
         """
         side1Groups = self.side1Groups = {}
         side2Groups = self.side2Groups = {}
+        skipGlyphs = self.font.lib.get("public.skipExportGlyphs", [])
         for groupName, contents in self.font.groups.items():
-            contents = [glyphName for glyphName in contents if glyphName in self.font]
+            contents = [
+                glyphName
+                for glyphName in contents
+                if glyphName in self.font
+                and glyphName not in skipGlyphs
+            ]
             if not contents:
                 continue
             if groupName.startswith(side1Prefix):
@@ -116,11 +122,17 @@ class KernFeatureWriter(object):
         You should not call this method directly.
         """
         pairs = self.pairs = {}
+        skipGlyphs = self.font.lib.get("public.skipExportGlyphs", [])
         for (side1, side2), value in self.font.kerning.items():
             # skip missing glyphs
             if side1 not in self.side1Groups and side1 not in self.font:
                 continue
             if side2 not in self.side2Groups and side2 not in self.font:
+                continue
+            # skip glyphs flagged to not export
+            if side1 in skipGlyphs:
+                continue
+            if side2 in skipGlyphs:
                 continue
             # skip empty groups
             if side1.startswith(side1Prefix) and side1 not in self.side1Groups:
@@ -488,6 +500,70 @@ feature kern {
 
     # group, group
     pos @kern1.A @kern2.A -25;
+} kern;
+"""
+
+def _skipGlyphsTest():
+    """
+    >>> from defcon import Font
+    >>> font = Font()
+    >>> names = "A AA B BB X XX Z ZZ".split(" ")
+    >>> for name in names:
+    ...     glyph = font.newGlyph(name)
+    >>> groups = {
+    ...     "public.kern1.A" : ["A", "AA"],
+    ...     "public.kern1.B" : ["B", "BB"],
+    ...     "public.kern1.X" : ["X", "XX"],
+    ...     "public.kern1.Z" : ["ZZ"],
+    ...     "public.kern2.A" : ["A", "AA"],
+    ...     "public.kern2.B" : ["B", "BB"],
+    ...     "public.kern2.X" : ["X", "XX"],
+    ...     "public.kern2.Z" : ["ZZ"],
+    ... }
+    >>> font.groups.update(groups)
+    >>> kerning = {
+    ...     ("AA", "AA") : 1,
+    ...     ("AA", "BB") : 2,
+    ...     ("AA", "XX") : 3,
+    ...     ("XX", "AA") : 4,
+    ...     ("ZZ", "AA") : 5,
+    ...     ("AA", "ZZ") : 6,
+    ...     ("public.kern1.A", "public.kern2.A") : -1,
+    ...     ("public.kern1.A", "public.kern2.B") : -2,
+    ...     ("public.kern1.A", "public.kern2.X") : -3,
+    ...     ("public.kern1.X", "public.kern2.A") : -4,
+    ...     ("public.kern1.A", "public.kern2.Z") : -5,
+    ...     ("public.kern1.Z", "public.kern2.A") : -6,
+    ... }
+    >>> font.kerning.update(kerning)
+    >>> skip = ["XX", "ZZ"]
+    >>> font.lib["public.skipExportGlyphs"] = skip
+    >>> writer = KernFeatureWriter(font)
+    >>> text = writer.write()
+    >>> t1 = [line.strip() for line in text.strip().splitlines()]
+    >>> t2 = [line.strip() for line in _expectedSkipGlyphsFeatureText.strip().splitlines()]
+    >>> t1 == t2
+    True
+    """
+
+_expectedSkipGlyphsFeatureText = """
+feature kern {
+    @kern1.A = [A AA];
+    @kern1.B = [B BB];
+    @kern1.X = [X];
+    @kern2.A = [A AA];
+    @kern2.B = [B BB];
+    @kern2.X = [X];
+
+    # glyph, glyph
+    pos AA AA 1;
+    pos AA BB 2;
+
+    # group, group
+    pos @kern1.A @kern2.A -1;
+    pos @kern1.A @kern2.B -2;
+    pos @kern1.A @kern2.X -3;
+    pos @kern1.X @kern2.A -4;
 } kern;
 """
 
