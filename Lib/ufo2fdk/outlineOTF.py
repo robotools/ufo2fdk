@@ -754,3 +754,12 @@ class StubGlyph(object):
         return pen.bounds
 
     bounds = property(_get_bounds)
+
+    def _get_controlPointBounds(self):
+        from fontTools.pens.boundsPen import ControlBoundsPen
+        pen = ControlBoundsPen(None)
+        self.draw(pen)
+        return pen.bounds
+
+    controlPointBounds = property(_get_controlPointBounds)
+
