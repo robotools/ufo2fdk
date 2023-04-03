@@ -436,7 +436,7 @@ class OutlineOTFCompiler(object):
             width = glyph.width
             left = 0
             if len(glyph) or len(glyph.components):
-                left = glyph.controlPointBounds[1]   # get the most left control point
+                left = glyph.controlPointBounds[0]   # get the most left control point
             if left is None:
                 left = 0
             hmtx[glyphName] = (_roundInt(width), _roundInt(left))
