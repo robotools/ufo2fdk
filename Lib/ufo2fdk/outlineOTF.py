@@ -2,6 +2,7 @@ from __future__ import division, absolute_import
 
 import math
 
+from fontTools.misc.roundTools import otRound
 from fontTools.ttLib import TTFont, newTable
 from fontTools.cffLib import TopDictIndex, TopDict, CharStrings, SubrsIndex, GlobalSubrsIndex, PrivateDict, IndexedStrings
 from fontTools.ttLib.tables.O_S_2f_2 import Panose
@@ -510,10 +511,13 @@ class OutlineOTFCompiler(object):
         italicAngle = getAttrWithFallback(font.info, "italicAngle")
         post.italicAngle = italicAngle
         # underline
-        underlinePosition = getAttrWithFallback(font.info, "postscriptUnderlinePosition")
-        if underlinePosition is None:
-            underlinePosition = 0
-        post.underlinePosition = _roundInt(underlinePosition)
+        if "public.openTypePostUnderlinePosition" in font.lib:
+            underlinePosition = font.lib["public.openTypePostUnderlinePosition"]
+        else:
+            underlinePosition = getAttrWithFallback(
+                font.info, "postscriptUnderlinePosition"
+            )
+        post.underlinePosition = otRound(underlinePosition)
         underlineThickness = getAttrWithFallback(font.info, "postscriptUnderlineThickness")
         if underlineThickness is None:
             underlineThickness = 0
@@ -587,13 +591,18 @@ class OutlineOTFCompiler(object):
         # populate various numbers
         topDict.isFixedPitch = getAttrWithFallback(info, "postscriptIsFixedPitch")
         topDict.ItalicAngle = getAttrWithFallback(info, "italicAngle")
-        underlinePosition = getAttrWithFallback(info, "postscriptUnderlinePosition")
-        if underlinePosition is None:
-            underlinePosition = 0
-        topDict.UnderlinePosition = _roundInt(underlinePosition)
+        if (
+            "public.openTypePostUnderlinePosition" in self.ufo.lib
+            and info.postscriptUnderlinePosition is None
+        ):
+            underlinePosition = (
+                self.ufo.lib["public.openTypePostUnderlinePosition"]
+                - getAttrWithFallback(info, "postscriptUnderlineThickness") / 2
+            )
+        else:
+            underlinePosition = getAttrWithFallback(info, "postscriptUnderlinePosition")
+        topDict.UnderlinePosition = otRound(underlinePosition)
         underlineThickness = getAttrWithFallback(info, "postscriptUnderlineThickness")
-        if underlineThickness is None:
-            underlineThickness = 0
         topDict.UnderlineThickness = _roundInt(underlineThickness)
         # populate font matrix
         unitsPerEm = _roundInt(getAttrWithFallback(info, "unitsPerEm"))
