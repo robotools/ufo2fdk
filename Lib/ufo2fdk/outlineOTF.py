@@ -519,8 +519,6 @@ class OutlineOTFCompiler(object):
             )
         post.underlinePosition = otRound(underlinePosition)
         underlineThickness = getAttrWithFallback(font.info, "postscriptUnderlineThickness")
-        if underlineThickness is None:
-            underlineThickness = 0
         post.underlineThickness = _roundInt(underlineThickness)
         # determine if the font has a fixed width
         post.isFixedPitch = getAttrWithFallback(font.info, "postscriptIsFixedPitch")
