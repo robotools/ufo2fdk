@@ -241,12 +241,12 @@ def postscriptSlantAngleFallback(info):
 
 
 def postscriptUnderlineThicknessFallback(info):
-    """Return UPM * 0.05 (50 for 1000 UPM) and warn."""
+    """Return UPM * 0.05 (50 for 1000 UPM)"""
     return getAttrWithFallback(info, "unitsPerEm") * 0.05
 
 
 def postscriptUnderlinePositionFallback(info):
-    """Return UPM * -0.075 (-75 for 1000 UPM) and warn."""
+    """Return UPM * -0.075 (-75 for 1000 UPM)"""
     return getAttrWithFallback(info, "unitsPerEm") * -0.075
 
 
