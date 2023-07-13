@@ -240,6 +240,16 @@ def postscriptSlantAngleFallback(info):
     return getAttrWithFallback(info, "italicAngle")
 
 
+def postscriptUnderlineThicknessFallback(info):
+    """Return UPM * 0.05 (50 for 1000 UPM)"""
+    return getAttrWithFallback(info, "unitsPerEm") * 0.05
+
+
+def postscriptUnderlinePositionFallback(info):
+    """Return UPM * -0.075 (-75 for 1000 UPM)"""
+    return getAttrWithFallback(info, "unitsPerEm") * -0.075
+
+
 _postscriptWeightNameOptions = {
     100: "Thin",
     200: "Extra-light",
@@ -419,8 +429,6 @@ staticFallbackData = dict(
     openTypeNameRecords=None,
 
     postscriptUniqueID=None,
-    postscriptUnderlineThickness=None,
-    postscriptUnderlinePosition=None,
     postscriptIsFixedPitch=False,
     postscriptBlueValues=[],
     postscriptOtherBlues=[],
@@ -477,6 +485,8 @@ specialFallbacks = dict(
     postscriptNominalWidthX=postscriptNominalWidthXFallback,
     woffMajorVersion=woffMajorVersionFallback,
     woffMinorVersion=woffMinorVersionFallback,
+    postscriptUnderlineThickness=postscriptUnderlineThicknessFallback,
+    postscriptUnderlinePosition=postscriptUnderlinePositionFallback,
 )
 
 requiredAttributes = set(ufoLib.fontInfoAttributesVersion2) - (set(staticFallbackData.keys()) | set(specialFallbacks.keys()))
