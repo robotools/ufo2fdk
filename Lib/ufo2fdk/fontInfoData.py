@@ -159,7 +159,7 @@ def openTypeOS2WinAscentFallback(info):
     If that is not available, fallback to *ascender*.
     If the maximum y value is negative, fallback to 0 (zero).
     """
-    font = info.getParent()
+    font = info.font
     if font is None:
         yMax = getAttrWithFallback(info, "ascender")
     else:
@@ -179,7 +179,7 @@ def openTypeOS2WinDescentFallback(info):
     If that is not available, fallback to *descender*.
     If the mininum y value is positive, fallback to 0 (zero).
     """
-    font = info.getParent()
+    font = info.font
     if font is None:
         return abs(getAttrWithFallback(info, "descender"))
     bounds = getFontBounds(font)
