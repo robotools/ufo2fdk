@@ -394,7 +394,8 @@ class MakeOTFPartsCompiler(object):
         lines = []
         for id, attr in idToAttr:
             value = getAttrWithFallback(self.font.info, attr)
-            if value is None:
+            if not value:
+                # dont write None or empty strings
                 continue
             s = 'nameid %d "%s";' % (id, winStr(value))
             lines.append(s)
