@@ -69,7 +69,7 @@ class KernFeatureWriter(object):
                 rules.append(note)
                 rules += self.getFeatureRulesForPairs(pairs)
         # compile
-        feature = ["feature kern {"]
+        feature = ["feature kern {", "    lookupflag IgnoreMarks;"]
         if headerText:
             for line in headerText.splitlines():
                 line = line.strip()
